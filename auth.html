@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <link rel="stylesheet" href="settings.css">
+  <link rel="stylesheet" href="thirdParty/bootstrap-grid.min.css">
+  <link rel="stylesheet" href="thirdParty/bootstrap-reboot.min.css">
+  <link rel="stylesheet" href="thirdParty/bootstrap.min.css">
+  <link rel="stylesheet" href="thirdParty/bootstrap-toggle.min.css">
+  <script type="text/javascript" src="thirdParty/jquery-3.5.1.min.js"></script>
+  <script type="text/javascript" src="auth.js"></script>
+  <title>Login</title>
+  <style>
+    h1 {
+      font-size: 30px;
+      margin: 20px 0;
+    }
+
+    #window {
+      width: 100%;
+      height: 98vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    #page {
+      border-radius: 6px;
+      max-width: 800px;
+      width: 350px;
+      padding: 20px;
+      padding-top: 15px;
+
+      -webkit-box-shadow: -1px -2px 26px 8px rgba(0, 0, 0, 0.18);
+      -moz-box-shadow: -1px -2px 26px 8px rgba(0, 0, 0, 0.18);
+      box-shadow: -1px -2px 26px 8px rgba(0, 0, 0, 0.18);
+    }
+  </style>
+</head>
+
+<body>
+  <div id="window">
+    <div id="page">
+      <h4 id="title">Authentication</h4>
+      <div class="form-group">
+        <label for="inputPassword">Enter Your Password</label>
+        <input type="password" class="form-control" id="inputPassword" />
+        <button type="submit" class="btn btn-primary mt-3" id="submitPassword">Continue</button>
+      </div>
+    </div>
+  </div>
+</body>
+
+</html>

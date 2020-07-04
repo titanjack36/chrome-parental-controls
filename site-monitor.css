@@ -1,0 +1,12 @@
+#parentalControlChromeExtensionOverlayTimer {
+  position: fixed;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  background-color: #f06926;
+  color: white;
+  text-align: center;
+  z-index: 100000;
+  font-size: 30px;
+  padding: 5px 0;
+}
