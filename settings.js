@@ -4,6 +4,7 @@ var $inputHr;
 var $inputMin;
 var $inputSec;
 var lastRecordedTime;
+var wasTimerEdited = false;
 
 chrome.runtime.sendMessage({ action: 'isLoggedIn' }, function (response) {
   if (!(response && response.isAuth)) {
@@ -17,7 +18,7 @@ chrome.runtime.sendMessage({ action: 'getTimerState' }, function (response) {
     updateTimer(response.timeRemaining);
     toggleTimer(response.isTimerActive);
     if ($toggleTimerSwitch) {
-      $toggleTimerSwitch.prop("checked", true);
+      $toggleTimerSwitch.prop("checked", response.isTimerActive);
     }
   }
 });
@@ -42,6 +43,18 @@ $(document).ready(function () {
     toggleTimer(this.checked);
   });
 
+  $inputHr.on('input propertychange paste', function () {
+    wasTimerEdited = true;
+  });
+
+  $inputMin.on('input propertychange paste', function () {
+    wasTimerEdited = true;
+  });
+
+  $inputSec.on('input propertychange paste', function () {
+    wasTimerEdited = true;
+  });
+
   $("#resetTimer").click(function () {
     resetTimer();
   });
@@ -51,7 +64,7 @@ $(document).ready(function () {
     chrome.tabs.getCurrent(function (tab) {
       chrome.tabs.update(tab.id, { url: chrome.extension.getURL('auth-reset.html') });
     });
-  })
+  });
 });
 
 function toggleTimer(isSetToRun) {
@@ -63,7 +76,7 @@ function toggleTimer(isSetToRun) {
       + +$inputSec.val();
 
     if (isSetToRun) {
-      if (timeRemaining !== lastRecordedTime) {
+      if (wasTimerEdited && timeRemaining !== lastRecordedTime) {
         chrome.runtime.sendMessage({
           action: 'setTime', time: timeRemaining,
           baseTime: timeRemaining
@@ -72,6 +85,7 @@ function toggleTimer(isSetToRun) {
       }
     } else {
       lastRecordedTime = timeRemaining;
+      wasTimerEdited = false;
     }
 
     isTimerActive = isSetToRun;
