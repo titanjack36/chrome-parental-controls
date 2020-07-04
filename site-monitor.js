@@ -8,8 +8,8 @@ var $body;
 if (matchingSiteUrl) {
   $body = $("body");
   $body.append("<div id='parentalControlChromeExtensionOverlayTimer'>" +
-    "<span style='font-size:20px;'>还剩 </span><span>02h 00m 00s</span>" +
-    "<span style='font-size:20px;'> remaining</span></div>");
+    "<div><span style='font-size:20px;'>还剩 </span><span>02h 00m 00s</span>" +
+    "<span style='font-size:20px;'> remaining</span></div></div>");
 
   initializeTimer();
 
@@ -30,7 +30,7 @@ if (matchingSiteUrl) {
 }
 
 function initializeTimer() {
-  var $timer = $("#parentalControlChromeExtensionOverlayTimer > span:nth-child(2)");
+  var $timer = $("#parentalControlChromeExtensionOverlayTimer span:nth-child(2)");
   var lastRecordedTime;
 
   var port = chrome.runtime.connect({ name: "timer" });
