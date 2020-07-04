@@ -1,5 +1,5 @@
 var isAuthenticated = false;
-var isTimerActive = false;
+var isTimerActive = true;
 var isTimerRunning = false;
 var timeRemaining = 0;
 var baseTime = 0;
@@ -17,7 +17,7 @@ chrome.storage.local.get(['savedTime'], function (result) {
   }
 });
 chrome.storage.local.get(['isTimerActive'], function (result) {
-  if (result) {
+  if (result && result.isTimerActive !== undefined) {
     isTimerActive = result.isTimerActive;
   }
 });

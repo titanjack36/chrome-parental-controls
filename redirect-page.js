@@ -16,7 +16,8 @@ var interval = setInterval(function () {
   port.postMessage({ action: 'getTime' });
 }, 10000);
 port.onMessage.addListener(function (msg) {
-  if (msg && msg.timeRemaining !== undefined && msg.timeRemaining !== 0) {
+  if (msg && ((msg.timeRemaining !== undefined && msg.timeRemaining !== 0)
+    || !msg.isTimerActive)) {
     chrome.runtime.sendMessage({ action: 'restorePage' }, function (response) { });
   }
 });

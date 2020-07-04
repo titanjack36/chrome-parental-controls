@@ -30,8 +30,11 @@ if (matchingSiteUrl) {
 }
 
 function initializeTimer() {
-  var $timer = $("#parentalControlChromeExtensionOverlayTimer span:nth-child(2)");
+  var $overlay = $("#parentalControlChromeExtensionOverlayTimer");
+  var $timer = $overlay.find("span:nth-child(2)");
   var lastRecordedTime;
+  var isTimerDisplayed = false;
+  $overlay.hide();
 
   var port = chrome.runtime.connect({ name: "timer" });
   var interval = setInterval(function () {
@@ -39,8 +42,16 @@ function initializeTimer() {
   }, 100);
   port.onMessage.addListener(function (msg) {
     if (msg && msg.timeRemaining !== undefined) {
+      if (msg.isTimerActive && !isTimerDisplayed) {
+        $overlay.show();
+        isTimerDisplayed = true;
+      } else if (!msg.isTimerActive && isTimerDisplayed) {
+        $overlay.hide();
+        isTimerDisplayed = false;
+      }
+
       let currentTime = msg.timeRemaining;
-      if (currentTime === 0) {
+      if (currentTime === 0 && msg.isTimerActive) {
         chrome.runtime.sendMessage({ action: 'performRedirect' }, function (response) { });
       }
       if (!lastRecordedTime || Math.floor(currentTime) !== Math.floor(lastRecordedTime)) {
