@@ -20,7 +20,7 @@ $(document).ready(function () {
 function submitPassword() {
   const newPassword = $("#newPassword").val();
   const confirmPassword = $("#confirmPassword").val();
-  if (newPassword === confirmPassword) {
+  if (newPassword.length > 0 && newPassword === confirmPassword) {
     chrome.storage.local.set({ password: newPassword }, function () { });
     chrome.runtime.sendMessage({ action: 'login' }, function (response) { });
     chrome.tabs.getCurrent(function (tab) {
