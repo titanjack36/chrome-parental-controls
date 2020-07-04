@@ -149,6 +149,26 @@ var monitorInterval = setInterval(function () {
   });
 }, 1000);
 
+var counter = 0;
+var currentTime = new Date();
+var timerInterval = setInterval(function () {
+  const newTime = new Date();
+  const elapsedTime = (newTime.getTime() - currentTime.getTime()) / 1000;
+  currentTime = newTime;
+  if (isTimerActive && isTimerRunning) {
+    if (timeRemaining - elapsedTime > 0) {
+      timeRemaining -= elapsedTime;
+    } else {
+      timeRemaining = 0;
+    }
+    if (counter >= 50 || timeRemaining === 0) {
+      chrome.storage.local.set({ savedTime: timeRemaining }, function () { });
+      counter = 0;
+    }
+    counter++;
+  }
+}, 100);
+
 async function checkForActiveTabs(tabs) {
   let hasActiveTabs = false;
   for (const tab of tabs) {
@@ -171,23 +191,3 @@ function updateTimerState(isSetToActive) {
   isTimerActive = isSetToActive;
   chrome.storage.local.set({ isTimerActive: isSetToActive }, function () { });
 }
-
-var counter = 0;
-var currentTime = new Date();
-var timerInterval = setInterval(function () {
-  const newTime = new Date();
-  const elapsedTime = (newTime.getTime() - currentTime.getTime()) / 1000;
-  currentTime = newTime;
-  if (isTimerActive && isTimerRunning) {
-    if (timeRemaining - elapsedTime > 0) {
-      timeRemaining -= elapsedTime;
-    } else {
-      timeRemaining = 0;
-    }
-    if (counter >= 50 || timeRemaining === 0) {
-      chrome.storage.local.set({ savedTime: timeRemaining }, function () { });
-      counter = 0;
-    }
-    counter++;
-  }
-}, 100);
