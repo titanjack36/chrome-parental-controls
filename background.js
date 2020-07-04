@@ -3,6 +3,7 @@ var isTimerActive = false;
 var isTimerRunning = false;
 var timeRemaining = 0;
 var baseTime = 0;
+var lastRecordedDate;
 
 var savedSites = new Map();
 var monitorSiteList = [
@@ -26,16 +27,9 @@ chrome.storage.local.get(['timerBaseTime'], function (result) {
   }
 });
 chrome.storage.local.get(['lastRecordedDate'], function (result) {
-  let currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
   if (result && result.lastRecordedDate) {
-    let lastRecordedDate = new Date(JSON.parse(result.lastRecordedDate));
-    if (currentDate.getTime() !== lastRecordedDate.getTime()) {
-      timeRemaining = baseTime;
-    }
+    lastRecordedDate = new Date(JSON.parse(result.lastRecordedDate));
   }
-  chrome.storage.local.set({ lastRecordedDate: JSON.stringify(currentDate) },
-    function () { });
 });
 
 chrome.runtime.onMessage.addListener(
@@ -136,6 +130,19 @@ function checkAllTabs() {
   });
 }*/
 
+var dateCheckInterval = setInterval(function () {
+  let currentDate = new Date();
+  currentDate.setHours(0, 0, 0, 0);
+  if (!lastRecordedDate || currentDate.getTime() !== lastRecordedDate.getTime()) {
+    if (lastRecordedDate) {
+      timeRemaining = baseTime;
+    }
+    lastRecordedDate = currentDate;
+    chrome.storage.local.set({ lastRecordedDate: JSON.stringify(currentDate) },
+      function () { });
+  }
+}, 10000);
+
 var monitorInterval = setInterval(function () {
   chrome.tabs.query({}, function (tabs) {
     checkForActiveTabs(tabs);
@@ -177,7 +184,7 @@ var timerInterval = setInterval(function () {
     } else {
       timeRemaining = 0;
     }
-    if (counter >= 50) {
+    if (counter >= 50 || timeRemaining === 0) {
       chrome.storage.local.set({ savedTime: timeRemaining }, function () { });
       counter = 0;
     }
