@@ -8,7 +8,13 @@ var backgroundImages = [
 document.addEventListener("DOMContentLoaded", function (event) {
   let randIndex = Math.floor(Math.random() * backgroundImages.length);
   let body = document.getElementsByTagName('body')[0];
-  body.style.backgroundImage = "url(assets/" + backgroundImages[randIndex] + ")";
+  let splashScreen = document.getElementById('splashScreen');
+  var img = new Image();
+  img.onload = function () {
+    splashScreen.classList.add('fadeout');
+    body.style.backgroundImage = `url(${this.src})`;
+  }
+  img.src = `assets/${backgroundImages[randIndex]}`;
 });
 
 var port = chrome.runtime.connect({ name: "timer" });
