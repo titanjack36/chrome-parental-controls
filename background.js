@@ -215,7 +215,12 @@ function updateTabWatchSiteList() {
     tabs.forEach(tab => {
       chrome.tabs.sendMessage(tab.id,
         { action: 'setWatchSiteList', watchSiteList: watchSiteList },
-        response => { });
+        response => {
+          var lastError = chrome.runtime.lastError;
+          if (lastError) {
+            return;
+          }
+        });
     });
   });
 }
