@@ -38,17 +38,18 @@ function main() {
     switch (request.action) {
       case 'checkIsTabActive':
         let tabIsActive = false;
-        if (matchingSite.isVideoSite && matchingSite.timeVideoOnly) {
-          if (!videoSiteDetails) {
-            videoSiteDetails = getVideoSiteDetails(matchingSite.url);
+        if (matchingSite) {
+          if (matchingSite.isVideoSite && matchingSite.timeVideoOnly) {
+            if (!videoSiteDetails) {
+              videoSiteDetails = getVideoSiteDetails(matchingSite.url);
+            }
+            const selectorFound = !!$(videoSiteDetails.selector).length;
+            tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
+          } else {
+            tabIsActive = true;
           }
-          const selectorFound = !!$(videoSiteDetails.selector).length;
-          // xor statement
-          tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
-        } else {
-          tabIsActive = true;
+          response = { tabIsActive: tabIsActive };
         }
-        response = { tabIsActive: tabIsActive };
         break;
 
       case 'setWatchSiteList':

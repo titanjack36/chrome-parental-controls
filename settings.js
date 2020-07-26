@@ -90,11 +90,16 @@ $(document).ready(function () {
         createNewWatchSiteItem($inputSiteUrl.val());
       if (isAddSuccessful) {
         $("#addSiteModal").modal('hide');
-        $inputSiteUrl.val('');
+        resetInputSiteUrl($inputSiteUrl);
       } else {
-        invalidateInputSiteUrl();
+        invalidateInputSiteUrl($inputSiteUrl);
       }
     }
+  });
+
+  $('#addSiteModal').on('hidden.bs.modal', function () {
+    const $inputSiteUrl = $("#inputSiteUrl");
+    resetInputSiteUrl($inputSiteUrl);
   });
 
   $('body').on('click', '.video-only-site-btn', event => {
@@ -105,6 +110,7 @@ $(document).ready(function () {
       const siteItem = watchSiteList[index];
       siteItem.timeVideoOnly = !siteItem.timeVideoOnly;
       updateWatchSiteList();
+      makeSimpleRequest({ action: 'setWatchSiteList', watchSiteList: watchSiteList });
     }
   });
 
@@ -115,6 +121,7 @@ $(document).ready(function () {
       const index = +idMatch[1];
       watchSiteList.splice(index, 1);
       updateWatchSiteList();
+      makeSimpleRequest({ action: 'setWatchSiteList', watchSiteList: watchSiteList });
     }
   });
 
@@ -180,13 +187,12 @@ function createNewWatchSiteItem(url) {
     return false;
   }
   watchSiteList.push({ url: url, isVideoSite: isVideoSite(url), timeVideoOnly: false });
+  makeSimpleRequest({ action: 'setWatchSiteList', watchSiteList: watchSiteList });
   updateWatchSiteList();
   return true;
 }
 
 function updateWatchSiteList() {
-  chrome.runtime.sendMessage({ action: 'setWatchSiteList', watchSiteList: watchSiteList },
-    function (response) { });
   const watchSiteListHtml = watchSiteList.reduce((listHtml, site) => {
     return (listHtml + `
     <div class="list-item col">
@@ -260,8 +266,7 @@ function validURL(str) {
   return !!pattern.test(str);
 }
 
-function invalidateInputSiteUrl() {
-  const $inputSiteUrl = $("#inputSiteUrl");
+function invalidateInputSiteUrl($inputSiteUrl) {
   const $inputSiteUrlHelp = $("#inputSiteUrlHelp");
   if ($inputSiteUrl && $inputSiteUrlHelp) {
     $inputSiteUrl.addClass("is-invalid");
@@ -269,6 +274,19 @@ function invalidateInputSiteUrl() {
   }
 }
 
+function resetInputSiteUrl($inputSiteUrl) {
+  const $inputSiteUrlHelp = $("#inputSiteUrlHelp");
+  if ($inputSiteUrl && $inputSiteUrlHelp) {
+    $inputSiteUrl.val("");
+    $inputSiteUrl.removeClass("is-invalid");
+    $inputSiteUrlHelp.text("");
+  }
+}
+
 function isVideoSite(url) {
   return !!videoSites.find(site => url.includes(site.url));
+}
+
+function makeSimpleRequest(content) {
+  chrome.runtime.sendMessage(content, function (response) { });
 }
