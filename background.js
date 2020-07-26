@@ -6,40 +6,45 @@ var baseTime = 0;
 var lastRecordedDate;
 
 var savedSites = new Map();
-var monitorSiteList = [
-  "youtube.com",
-  "developer.chrome.com"
+var watchSiteList = [];
+const videoSites = [
+  { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true }
 ];
 
-chrome.storage.local.get(['savedTime'], function (result) {
+chrome.storage.local.get(['savedTime'], result => {
   if (result && result.savedTime && parseInt(result.savedTime)) {
     timeRemaining = parseInt(result.savedTime);
   }
 });
-chrome.storage.local.get(['isTimerActive'], function (result) {
+chrome.storage.local.get(['isTimerActive'], result => {
   if (result && result.isTimerActive !== undefined) {
     isTimerActive = result.isTimerActive;
   }
 });
-chrome.storage.local.get(['timerBaseTime'], function (result) {
+chrome.storage.local.get(['timerBaseTime'], result => {
   if (result) {
     baseTime = parseInt(result.timerBaseTime);
   }
 });
-chrome.storage.local.get(['lastRecordedDate'], function (result) {
+chrome.storage.local.get(['lastRecordedDate'], result => {
   if (result && result.lastRecordedDate) {
     lastRecordedDate = new Date(JSON.parse(result.lastRecordedDate));
   }
 });
+chrome.storage.local.get(['watchSiteList'], result => {
+  if (result && result.watchSiteList) {
+    watchSiteList = result.watchSiteList;
+  }
+});
 
 chrome.runtime.onMessage.addListener(
-  function (request, sender, sendResponse) {
+  (request, sender, sendResponse) => {
     if (request) {
       let response = {};
       switch (request.action) {
         case 'login':
           isAuthenticated = true;
-          setTimeout(function () {
+          setTimeout(() => {
             isAuthenticated = false;
           }, 1000);
           break;
@@ -59,12 +64,12 @@ chrome.runtime.onMessage.addListener(
           if (request.time && parseInt(request.time)) {
             timeRemaining = parseInt(request.time);
             chrome.storage.local.set({ savedTime: timeRemaining },
-              function () { });
+              () => { });
           }
           if (request.baseTime && parseInt(request.baseTime)) {
             baseTime = parseInt(request.baseTime);
             chrome.storage.local.set({ timerBaseTime: baseTime },
-              function () { });
+              () => { });
           }
           break;
 
@@ -81,8 +86,9 @@ chrome.runtime.onMessage.addListener(
           break;
 
         case 'performRedirect':
-          chrome.tabs.update(sender.tab.id, { url: chrome.extension.getURL('redirect-page.html') });
-          chrome.tabs.get(sender.tab.id, function (tab) {
+          chrome.tabs.update(sender.tab.id,
+            { url: chrome.extension.getURL('redirect-page.html') });
+          chrome.tabs.get(sender.tab.id, tab => {
             savedSites.set(sender.tab.id, tab.url);
           });
           break;
@@ -94,6 +100,17 @@ chrome.runtime.onMessage.addListener(
           }
           break;
 
+        case 'setWatchSiteList':
+          if (request.watchSiteList) {
+            watchSiteList = request.watchSiteList;
+            chrome.storage.local.set({ watchSiteList: watchSiteList }, () => { });
+            updateTabWatchSiteList();
+          }
+          break;
+
+        case 'getWatchSiteListAndVideoSites':
+          response = { watchSiteList: watchSiteList, videoSites: videoSites };
+          break;
       }
       sendResponse(response);
     }
@@ -101,9 +118,9 @@ chrome.runtime.onMessage.addListener(
   }
 );
 
-chrome.runtime.onConnect.addListener(function (port) {
+chrome.runtime.onConnect.addListener(port => {
   console.assert(port.name == "timer");
-  port.onMessage.addListener(function (msg) {
+  port.onMessage.addListener(msg => {
     port.postMessage({
       timeRemaining: timeRemaining,
       isTimerActive: isTimerActive
@@ -130,7 +147,7 @@ function checkAllTabs() {
   });
 }*/
 
-var dateCheckInterval = setInterval(function () {
+var dateCheckInterval = setInterval(() => {
   let currentDate = new Date();
   currentDate.setHours(0, 0, 0, 0);
   if (!lastRecordedDate || currentDate.getTime() !== lastRecordedDate.getTime()) {
@@ -139,19 +156,19 @@ var dateCheckInterval = setInterval(function () {
     }
     lastRecordedDate = currentDate;
     chrome.storage.local.set({ lastRecordedDate: JSON.stringify(currentDate) },
-      function () { });
+      () => { });
   }
 }, 10000);
 
-var monitorInterval = setInterval(function () {
-  chrome.tabs.query({}, function (tabs) {
+var monitorInterval = setInterval(() => {
+  chrome.tabs.query({}, tabs => {
     checkForActiveTabs(tabs);
   });
 }, 1000);
 
 var counter = 0;
 var currentTime = new Date();
-var timerInterval = setInterval(function () {
+var timerInterval = setInterval(() => {
   const newTime = new Date();
   const elapsedTime = (newTime.getTime() - currentTime.getTime()) / 1000;
   currentTime = newTime;
@@ -162,7 +179,7 @@ var timerInterval = setInterval(function () {
       timeRemaining = 0;
     }
     if (counter >= 50 || timeRemaining === 0) {
-      chrome.storage.local.set({ savedTime: timeRemaining }, function () { });
+      chrome.storage.local.set({ savedTime: timeRemaining }, () => { });
       counter = 0;
     }
     counter++;
@@ -174,13 +191,14 @@ async function checkForActiveTabs(tabs) {
   for (const tab of tabs) {
     if (tab && tab.id !== undefined) {
       hasActiveTabs = hasActiveTabs || await new Promise(resolve => {
-        chrome.tabs.sendMessage(tab.id, {}, function (response) {
-          resolve(!!(response && response.tabIsActive));
-          var lastError = chrome.runtime.lastError;
-          if (lastError) {
-            return;
-          }
-        });
+        chrome.tabs.sendMessage(tab.id, { action: 'checkIsTabActive' },
+          response => {
+            resolve(!!(response && response.tabIsActive));
+            var lastError = chrome.runtime.lastError;
+            if (lastError) {
+              return;
+            }
+          });
       });
     }
   }
@@ -189,5 +207,15 @@ async function checkForActiveTabs(tabs) {
 
 function updateTimerState(isSetToActive) {
   isTimerActive = isSetToActive;
-  chrome.storage.local.set({ isTimerActive: isSetToActive }, function () { });
+  chrome.storage.local.set({ isTimerActive: isSetToActive }, () => { });
+}
+
+function updateTabWatchSiteList() {
+  chrome.tabs.query({}, tabs => {
+    tabs.forEach(tab => {
+      chrome.tabs.sendMessage(tab.id,
+        { action: 'setWatchSiteList', watchSiteList: watchSiteList },
+        response => { });
+    });
+  });
 }
