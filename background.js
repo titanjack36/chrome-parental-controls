@@ -8,7 +8,9 @@ var lastRecordedDate;
 var savedSites = new Map();
 var watchSiteList = [];
 const videoSites = [
-  { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true }
+  { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true },
+  { url: "tfo.org", selector: '.jw-state-playing', activateOnSelectorFound: true },
+  { url: "tvokids.com", selector: '.vjs-playing', activateOnSelectorFound: true }
 ];
 
 chrome.storage.local.get(['savedTime'], result => {
@@ -153,6 +155,7 @@ var dateCheckInterval = setInterval(() => {
   if (!lastRecordedDate || currentDate.getTime() !== lastRecordedDate.getTime()) {
     if (lastRecordedDate) {
       timeRemaining = baseTime;
+      chrome.storage.local.set({ savedTime: timeRemaining }, () => { });
     }
     lastRecordedDate = currentDate;
     chrome.storage.local.set({ lastRecordedDate: JSON.stringify(currentDate) },

@@ -23,7 +23,7 @@ function main() {
   if (matchingSite) {
     const $body = $("body");
     $body.append("<div id='parentalControlChromeExtensionOverlayTimer'>" +
-      "<div><span style='font-size:20px;'>还剩 </span><span>--h --m --s</span>" +
+      "<div><span>--h --m --s</span>" +
       "<span style='font-size:20px;'> remaining</span></div></div>");
 
     initializeTimer();
@@ -68,7 +68,7 @@ function main() {
 
 function initializeTimer() {
   const $overlay = $("#parentalControlChromeExtensionOverlayTimer");
-  const $timer = $overlay.find("span:nth-child(2)");
+  const $timer = $overlay.find("span:nth-child(1)");
   var isTimerDisplayed = false;
   $overlay.hide();
 
