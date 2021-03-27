@@ -27,7 +27,7 @@ function submitPassword() {
   if (password === savedPassword) {
     setAuthenticated(true);
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('settings.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('dashboard.html') });
     });
   }
 }

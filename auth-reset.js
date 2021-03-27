@@ -24,7 +24,7 @@ function submitPassword() {
     chrome.storage.local.set({ password: newPassword }, function () { });
     chrome.runtime.sendMessage({ action: 'login' }, function (response) { });
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('settings.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('dashboard.html') });
     });
   }
 }

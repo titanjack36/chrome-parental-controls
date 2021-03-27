@@ -1,9 +1,18 @@
 var isAuthenticated = false;
-var isTimerActive = true;
-var isTimerRunning = false;
-var timeRemaining = 0;
-var baseTime = 0;
-var lastRecordedDate;
+var lastRecordedTime;
+var currentTime;
+var savedPassword;
+var timerState = {
+  isTimerActive: true,
+  isTimerRunning: true,
+  timeRemaining: 0, /* time is recorded in seconds */
+  baseTime: 0 /* time is recorded in seconds */
+};
+var timerConfig = {
+  useAutoReset: false,
+  useWatchList: false,
+  useBreaks: false
+}
 
 var savedSites = new Map();
 var watchSiteList = [];
@@ -13,120 +22,124 @@ const videoSites = [
   { url: "tvokids.com", selector: '.vjs-playing', activateOnSelectorFound: true }
 ];
 
-chrome.storage.local.get(['savedTime'], result => {
-  if (result && result.savedTime && parseInt(result.savedTime)) {
-    timeRemaining = parseInt(result.savedTime);
+chrome.storage.local.get(['timerState', 'lastRecordedTime', 'watchSiteList', 'password'], result => {
+  if (!result) {
+    return;
   }
-});
-chrome.storage.local.get(['isTimerActive'], result => {
-  if (result && result.isTimerActive !== undefined) {
-    isTimerActive = result.isTimerActive;
+  if (result.timerState) {
+    timerState = result.timerState;
+    timerState.isTimerRunning = !timerConfig.useWatchList;
   }
-});
-chrome.storage.local.get(['timerBaseTime'], result => {
-  if (result) {
-    baseTime = parseInt(result.timerBaseTime);
-  }
-});
-chrome.storage.local.get(['lastRecordedDate'], result => {
-  if (result && result.lastRecordedDate) {
-    lastRecordedDate = new Date(JSON.parse(result.lastRecordedDate));
-  }
-});
-chrome.storage.local.get(['watchSiteList'], result => {
-  if (result && result.watchSiteList) {
+  if (result.watchSiteList) {
     watchSiteList = result.watchSiteList;
   }
+  if (result.password) {
+    savedPassword = result.password;
+  }
+  if (result.lastRecordedTime) {
+    lastRecordedTime = new Date(JSON.parse(result.lastRecordedTime));
+  }
+  // If not using watch list, then include time elapsed when browser was closed
+  currentTime = !timerConfig.useWatchList && lastRecordedTime ? lastRecordedTime : new Date();
 });
 
-chrome.runtime.onMessage.addListener(
-  (request, sender, sendResponse) => {
-    if (request) {
-      let response = {};
-      switch (request.action) {
-        case 'login':
-          isAuthenticated = true;
-          setTimeout(() => {
-            isAuthenticated = false;
-          }, 1000);
-          break;
-
-        case 'isLoggedIn':
-          response = { isAuth: isAuthenticated };
-          break;
-
-        case 'getTimerState':
-          response = {
-            timeRemaining: timeRemaining,
-            isTimerActive: isTimerActive
-          };
-          break;
-
-        case 'setTime':
-          if (request.time && parseInt(request.time)) {
-            timeRemaining = parseInt(request.time);
-            chrome.storage.local.set({ savedTime: timeRemaining },
-              () => { });
-          }
-          if (request.baseTime && parseInt(request.baseTime)) {
-            baseTime = parseInt(request.baseTime);
-            chrome.storage.local.set({ timerBaseTime: baseTime },
-              () => { });
-          }
-          break;
-
-        case 'activateTimer':
-          updateTimerState(true);
-          break;
-
-        case 'deactivateTimer':
-          updateTimerState(false);
-          break;
-
-        case 'getBaseTime':
-          response = { baseTime: baseTime };
-          break;
-
-        case 'performRedirect':
-          chrome.tabs.update(sender.tab.id,
-            { url: chrome.extension.getURL('redirect-page.html') });
-          chrome.tabs.get(sender.tab.id, tab => {
-            savedSites.set(sender.tab.id, tab.url);
-          });
-          break;
-
-        case 'restorePage':
-          const matchingSiteUrl = savedSites.get(sender.tab.id);
-          if (matchingSiteUrl) {
-            chrome.tabs.update(sender.tab.id, { url: matchingSiteUrl });
-          }
-          break;
-
-        case 'setWatchSiteList':
-          if (request.watchSiteList) {
-            watchSiteList = request.watchSiteList;
-            chrome.storage.local.set({ watchSiteList: watchSiteList }, () => { });
-            updateTabWatchSiteList();
-          }
-          break;
-
-        case 'getWatchSiteListAndVideoSites':
-          response = { watchSiteList: watchSiteList, videoSites: videoSites };
-          break;
-      }
-      sendResponse(response);
-    }
-    return true;
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  if (!request) {
+    return;
   }
-);
+  let response = {};
+  switch (request.action) {
+    case 'login':
+      isAuthenticated = true;
+      setTimeout(() => {
+        isAuthenticated = false;
+      }, 1000);
+      break;
+
+    case 'isLoggedIn':
+      response = { isAuth: isAuthenticated };
+      break;
+
+    case 'getTimerState':
+      response = timerState;
+      break;
+
+    case 'getTimerConfig':
+      response = timerConfig;
+      break;
+
+    case 'setTime':
+      if (request.time && parseInt(request.time)) {
+        timerState.timeRemaining = parseInt(request.time);
+        saveTimerState();
+      }
+      if (request.baseTime && parseInt(request.baseTime)) {
+        timerState.baseTime = parseInt(request.baseTime);
+        saveTimerState();
+      }
+      break;
+
+    case 'addTime':
+      if (request.time && parseInt(request.time)) {
+        timerState.timeRemaining += parseInt(request.time);
+        saveTimerState();
+      }
+      break;
+
+    case 'setTimerActive':
+      timerState.isTimerActive = !!request.timerActive;
+      saveTimerState();
+      break;
+
+    case 'setUseAutoReset':
+      timerConfig.useAutoReset = !!request.useAutoReset;
+      saveTimerState();
+      break;
+
+    case 'setUseWatchList':
+      timerConfig.useWatchList = !!request.useWatchList;
+      saveTimerState();
+      break;
+
+    case 'performRedirect':
+      chrome.tabs.update(sender.tab.id,
+        { url: chrome.extension.getURL('redirect-page.html') });
+      chrome.tabs.get(sender.tab.id, tab => {
+        savedSites.set(sender.tab.id, tab.url);
+      });
+      break;
+
+    case 'restorePage':
+      const matchingSiteUrl = savedSites.get(sender.tab.id);
+      if (matchingSiteUrl) {
+        chrome.tabs.update(sender.tab.id, { url: matchingSiteUrl });
+      }
+      break;
+
+    case 'setWatchSiteList':
+      if (request.watchSiteList) {
+        watchSiteList = request.watchSiteList;
+        chrome.storage.local.set({ watchSiteList: watchSiteList }, () => { });
+        updateWatchSiteListForAllTabs();
+      }
+      break;
+
+    case 'getWatchSiteListAndVideoSites':
+      response = { watchSiteList: watchSiteList, videoSites: videoSites };
+      break;
+
+    case 'validatePassword':
+      response = { isPasswordValid: savedPassword && request.password == savedPassword };
+      break;
+  }
+  sendResponse(response);
+  return true;
+});
 
 chrome.runtime.onConnect.addListener(port => {
-  console.assert(port.name == "timer");
+  console.assert(port.name === "timer");
   port.onMessage.addListener(msg => {
-    port.postMessage({
-      timeRemaining: timeRemaining,
-      isTimerActive: isTimerActive
-    });
+    port.postMessage(timerState);
     return true;
   });
 });
@@ -150,18 +163,21 @@ function checkAllTabs() {
 }*/
 
 var dateCheckInterval = setInterval(() => {
-  let currentDate = new Date();
-  currentDate.setHours(0, 0, 0, 0);
-  if (!lastRecordedDate || currentDate.getTime() !== lastRecordedDate.getTime()) {
-    if (lastRecordedDate) {
-      timeRemaining = baseTime;
-      chrome.storage.local.set({ savedTime: timeRemaining }, () => { });
-    }
-    lastRecordedDate = currentDate;
-    chrome.storage.local.set({ lastRecordedDate: JSON.stringify(currentDate) },
-      () => { });
+  if (!currentTime) {
+    return;
   }
-}, 10000);
+  if (timerConfig.useAutoReset) {
+    let currentDate = getDateFromDateTime(currentTime);
+    let lastRecordedDate = getDateFromDateTime(lastRecordedTime);
+    if (lastRecordedDate && currentDate.getTime() !== lastRecordedDate.getTime()) {
+      timerState.timeRemaining = timerState.baseTime;
+      saveTimerState();
+    }
+  }
+  lastRecordedTime = currentTime;
+  chrome.storage.local.set({ lastRecordedTime: JSON.stringify(currentTime) },
+    () => { });
+}, 1000);
 
 var monitorInterval = setInterval(() => {
   chrome.tabs.query({}, tabs => {
@@ -169,27 +185,29 @@ var monitorInterval = setInterval(() => {
   });
 }, 1000);
 
-var counter = 0;
-var currentTime = new Date();
-var timerInterval = setInterval(() => {
+var timerSyncInterval = setInterval(() => {
+  if (!currentTime) {
+    return;
+  }
   const newTime = new Date();
   const elapsedTime = (newTime.getTime() - currentTime.getTime()) / 1000;
   currentTime = newTime;
-  if (isTimerActive && isTimerRunning) {
-    if (timeRemaining - elapsedTime > 0) {
-      timeRemaining -= elapsedTime;
-    } else {
-      timeRemaining = 0;
+  if (timerState.isTimerActive && timerState.isTimerRunning) {
+    timerState.timeRemaining -= elapsedTime;
+    if (timerState.timeRemaining <= 0) {
+      timerState.timeRemaining = 0;
+      saveTimerState();
     }
-    if (counter >= 50 || timeRemaining === 0) {
-      chrome.storage.local.set({ savedTime: timeRemaining }, () => { });
-      counter = 0;
-    }
-    counter++;
   }
 }, 100);
 
+var timerSaveInterval = setInterval(() => saveTimerState(), 50000);
+
 async function checkForActiveTabs(tabs) {
+  if (!timerConfig.useWatchList) {
+    timerState.isTimerRunning = true;
+    return;
+  }
   let hasActiveTabs = false;
   for (const tab of tabs) {
     if (tab && tab.id !== undefined) {
@@ -205,15 +223,16 @@ async function checkForActiveTabs(tabs) {
       });
     }
   }
-  isTimerRunning = hasActiveTabs;
+  timerState.isTimerRunning = hasActiveTabs;
 }
 
-function updateTimerState(isSetToActive) {
-  isTimerActive = isSetToActive;
-  chrome.storage.local.set({ isTimerActive: isSetToActive }, () => { });
+function saveTimerState() {
+  chrome.storage.local.set({ 
+    timerState: { ...timerState, hasActiveTabs: false }
+  }, () => { });
 }
 
-function updateTabWatchSiteList() {
+function updateWatchSiteListForAllTabs() {
   chrome.tabs.query({}, tabs => {
     tabs.forEach(tab => {
       chrome.tabs.sendMessage(tab.id,
@@ -226,4 +245,13 @@ function updateTabWatchSiteList() {
         });
     });
   });
+}
+
+function getDateFromDateTime(dateTime) {
+  if (!dateTime) {
+    return undefined;
+  }
+  let date = new Date(dateTime);
+  date.setHours(0, 0, 0, 0);
+  return date;
 }

@@ -5,12 +5,11 @@ body {
 
 h1 {
   font-size: 30px;
-  margin: 20px 0;
+  margin: 20px 0 40px 0;
 }
 
 .group {
   padding: 10px;
-  margin-top: 20px;
 }
 
 #page {
@@ -39,10 +38,10 @@ h1 {
 
 #timer input {
   width: 75px;
-  direction: rtl;
   background-color: #d8d8d8;
   border: none;
   border-radius: 8px;
+  text-align: center;
 }
 
 #timer input[disabled] {

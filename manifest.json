@@ -1,8 +1,8 @@
 {
   "manifest_version": 2,
-  "name": "Chrome",
+  "name": "PC Chrome",
   "description": "An extension which controls how much time can be spent on websites",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "icons": {
     "128": "icon_128.png"
   },

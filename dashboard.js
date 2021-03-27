@@ -1,9 +1,6 @@
 var isTimerActive = false;
-var $toggleTimerSwitch;
-var $inputHr;
-var $inputMin;
-var $inputSec;
-var lastRecordedTime;
+var timerFields;
+var previousSetTime;
 var wasTimerEdited = false;
 
 var watchSiteList = [];
@@ -18,27 +15,26 @@ chrome.runtime.sendMessage({ action: 'isLoggedIn' }, function (response) {
     });
   }
 });
-chrome.runtime.sendMessage({ action: 'getTimerState' }, function (response) {
+chrome.runtime.sendMessage({ action: 'getTimerState' }, async function (response) {
   if (response && response.timeRemaining != null) {
+    await waitDocumentReady();
     updateTimer(response.timeRemaining);
     toggleTimer(response.isTimerActive);
-    if ($toggleTimerSwitch) {
-      $toggleTimerSwitch.prop("checked", response.isTimerActive);
-    }
+    setTimeout(() => $("#toggleTimer").prop("checked", response.isTimerActive), 100);
   }
 });
-chrome.runtime.sendMessage({ action: 'getWatchSiteListAndVideoSites' },
-  function (response) {
-    if (response) {
-      if (response.watchSiteList) {
-        watchSiteList = response.watchSiteList;
-      }
-      if (response.videoSites) {
-        videoSites = response.videoSites;
-      }
-      updateWatchSiteList();
+chrome.runtime.sendMessage({ action: 'getWatchSiteListAndVideoSites' }, async function (response) {
+  if (response) {
+    if (response.watchSiteList) {
+      watchSiteList = response.watchSiteList;
     }
-  });
+    if (response.videoSites) {
+      videoSites = response.videoSites;
+    }
+    await waitDocumentReady();
+    updateWatchSiteList();
+  }
+});
 
 var port = chrome.runtime.connect({ name: "timer" });
 var interval = setInterval(function () {
@@ -50,30 +46,47 @@ port.onMessage.addListener(function (msg) {
   }
 });
 
+var isDocumentReady = false;
+var focusedTimerField;
 $(document).ready(function () {
-  $toggleTimerSwitch = $("#toggleTimer");
-  $inputHr = $("#inputHr");
-  $inputMin = $("#inputMin");
-  $inputSec = $("#inputSec");
+  isDocumentReady = true;
+  timerFields = {
+    $inputHr: $("#inputHr"),
+    $inputMin: $("#inputMin"),
+    $inputSec: $("#inputSec")
+  };
 
-  $toggleTimerSwitch.change(function () {
+  $("#toggleTimer").change(function () {
     toggleTimer(this.checked);
   });
 
-  $inputHr.on('input propertychange paste', function () {
-    wasTimerEdited = true;
+  $("#enableAutoReset").change(function () {
+    sendAction('setUseWatchList', { useAutoReset: this.checked });
   });
 
-  $inputMin.on('input propertychange paste', function () {
-    wasTimerEdited = true;
-  });
-
-  $inputSec.on('input propertychange paste', function () {
-    wasTimerEdited = true;
-  });
+  for (let prop in timerFields) {
+    let $timerField = timerFields[prop];
+    $timerField.on('input propertychange paste', function () {
+      wasTimerEdited = true;
+    });
+    $timerField.on('input focus', function () {
+      if (focusedTimerField == this) {
+        return;
+      }
+      focusedTimerField = this;
+      setTimeout(function () { focusedTimerField.select(); }, 100);
+    });
+    $timerField.on('input blur', function() {
+      focusedTimerField = null;
+    });
+  }
 
   $("#resetTimer").click(function () {
     resetTimer();
+  });
+
+  $("#enableWatchList").change(function () {
+    sendAction('setUseWatchList', { useWatchList: this.checked });
   });
 
   $("#changePassword").click(function () {
@@ -110,7 +123,7 @@ $(document).ready(function () {
       const siteItem = watchSiteList[index];
       siteItem.timeVideoOnly = !siteItem.timeVideoOnly;
       updateWatchSiteList();
-      makeSimpleRequest({ action: 'setWatchSiteList', watchSiteList: watchSiteList });
+      sendAction('setWatchSiteList', { watchSiteList });
     }
   });
 
@@ -121,7 +134,7 @@ $(document).ready(function () {
       const index = +idMatch[1];
       watchSiteList.splice(index, 1);
       updateWatchSiteList();
-      makeSimpleRequest({ action: 'setWatchSiteList', watchSiteList: watchSiteList });
+      sendAction('setWatchSiteList', { watchSiteList });
     }
   });
 
@@ -135,34 +148,32 @@ $(document).ready(function () {
 });
 
 function toggleTimer(isSetToRun) {
-  if ($inputHr && $inputMin && $inputSec) {
-    $inputHr.prop('disabled', isSetToRun);
-    $inputMin.prop('disabled', isSetToRun);
-    $inputSec.prop('disabled', isSetToRun);
-    const timeRemaining = +$inputHr.val() * 3600 + +$inputMin.val() * 60
-      + +$inputSec.val();
-
-    if (isSetToRun) {
-      if (wasTimerEdited && timeRemaining !== lastRecordedTime) {
-        chrome.runtime.sendMessage({
-          action: 'setTime', time: timeRemaining,
-          baseTime: timeRemaining
-        },
-          function (response) { });
-      }
-    } else {
-      lastRecordedTime = timeRemaining;
-      wasTimerEdited = false;
-    }
-
-    isTimerActive = isSetToRun;
-    chrome.runtime.sendMessage({ action: isSetToRun ? 'activateTimer' : 'deactivateTimer' },
-      function (response) { });
+  if (!timerFields) {
+    return;
   }
+  let { $inputHr, $inputMin, $inputSec } = timerFields;
+  $inputHr.prop('disabled', isSetToRun);
+  $inputMin.prop('disabled', isSetToRun);
+  $inputSec.prop('disabled', isSetToRun);
+  const timeRemaining = +$inputHr.val() * 3600 + +$inputMin.val() * 60
+    + +$inputSec.val();
+
+  if (isSetToRun) {
+    if (wasTimerEdited && timeRemaining !== previousSetTime) {
+      sendAction('setTime', { time: timeRemaining, baseTime: timeRemaining });
+    }
+  } else {
+    previousSetTime = timeRemaining;
+    wasTimerEdited = false;
+  }
+
+  isTimerActive = isSetToRun;
+  chrome.runtime.sendMessage({ action: 'setTimerActive', timerActive: isTimerActive },
+    function (response) { });
 }
 
 function resetTimer() {
-  chrome.runtime.sendMessage({ action: 'getBaseTime' }, function (response) {
+  chrome.runtime.sendMessage({ action: 'getTimerState' }, function (response) {
     let baseTime = (response && response.baseTime) ? response.baseTime : 0;
     chrome.runtime.sendMessage({ action: 'setTime', time: baseTime },
       function (response) { });
@@ -171,11 +182,13 @@ function resetTimer() {
 }
 
 function updateTimer(newTime) {
-  if ($inputHr && $inputMin && $inputSec) {
-    $inputHr.val(addPrefixZero(Math.floor(newTime / 3600)));
-    $inputMin.val(addPrefixZero(Math.floor(newTime % 3600 / 60)));
-    $inputSec.val(addPrefixZero(Math.floor(newTime % 60)));
+  if (!timerFields) {
+    return;
   }
+  let { $inputHr, $inputMin, $inputSec } = timerFields;
+  $inputHr.val(addPrefixZero(Math.floor(newTime / 3600)));
+  $inputMin.val(addPrefixZero(Math.floor(newTime % 3600 / 60)));
+  $inputSec.val(addPrefixZero(Math.floor(newTime % 60)));
 }
 
 function addPrefixZero(num) {
@@ -187,7 +200,7 @@ function createNewWatchSiteItem(url) {
     return false;
   }
   watchSiteList.push({ url: url, isVideoSite: isVideoSite(url), timeVideoOnly: false });
-  makeSimpleRequest({ action: 'setWatchSiteList', watchSiteList: watchSiteList });
+  sendAction('setWatchSiteList', { watchSiteList });
   updateWatchSiteList();
   return true;
 }
@@ -287,6 +300,17 @@ function isVideoSite(url) {
   return !!videoSites.find(site => url.includes(site.url));
 }
 
-function makeSimpleRequest(content) {
-  chrome.runtime.sendMessage(content, function (response) { });
+function sendAction(action, payload) {
+  chrome.runtime.sendMessage({action, ...payload}, function (response) { });
+}
+
+async function waitDocumentReady() {
+  return new Promise((resolve, reject) => {
+    let wait = setInterval(() => {
+      if (isDocumentReady) {
+        clearInterval(wait);
+        resolve();
+      }
+    }, 250);
+  });
 }
