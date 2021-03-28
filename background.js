@@ -128,8 +128,15 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       response = { watchSiteList: watchSiteList, videoSites: videoSites };
       break;
 
+    case 'setPassword':
+      if (request.newPassword) {
+        chrome.storage.local.set({ password: request.newPassword }, function () { });
+        savedPassword = request.newPassword;
+      }
+      break;
+
     case 'validatePassword':
-      response = { isPasswordValid: savedPassword && request.password == savedPassword };
+      response = { isPasswordValid: savedPassword && request.password === savedPassword };
       break;
   }
   sendResponse(response);

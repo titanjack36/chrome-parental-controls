@@ -73,6 +73,12 @@ $(document).ready(function () {
   $(`#confirmBtn`).click(function () {
     confirmAddTime();
   });
+
+  $("#password").on('keyup', function (e) {
+    if (e.keyCode === 13) {
+      confirmAddTime();
+    }
+  });
 });
 
 function confirmAddTime() {

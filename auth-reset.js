@@ -21,10 +21,14 @@ function submitPassword() {
   const newPassword = $("#newPassword").val();
   const confirmPassword = $("#confirmPassword").val();
   if (newPassword.length > 0 && newPassword === confirmPassword) {
-    chrome.storage.local.set({ password: newPassword }, function () { });
-    chrome.runtime.sendMessage({ action: 'login' }, function (response) { });
+    sendAction('setPassword', { newPassword });
+    sendAction('login', {});
     chrome.tabs.getCurrent(function (tab) {
       chrome.tabs.update(tab.id, { url: chrome.extension.getURL('dashboard.html') });
     });
   }
+}
+
+function sendAction(action, payload) {
+  chrome.runtime.sendMessage({action, ...payload}, function (response) { });
 }
