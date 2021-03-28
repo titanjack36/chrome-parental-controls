@@ -4,7 +4,9 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Time's Up! | 时间到了！</title>
+  <title>Time's Up!</title>
+  <script type="text/javascript" src="thirdParty/jquery-3.5.1.min.js"></script>
+  <script type="text/javascript" src="thirdParty/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" href="redirect-page.css">
   <script type="text/javascript" src="redirect-page.js"></script>
 </head>
@@ -17,10 +19,29 @@
       </h1>
     </div>
   </div>
-  <div id="main">
+  <div id="mainPage">
     <div>
       <h1>Time's Up!</h1>
-      <div class="text">You have used all of your screen time for today, please come back tomorrow to continue watching.
+      <div id="message">
+        You have used all of your alloted screen time.
+      </div>
+    </div>
+    <div id="addTime">
+      <h2>Add Time</h2>
+      <div id="timeOptionGroup">
+        <button class="timeOption" id="select15Min">15 Min</button>
+        <button class="timeOption" id="select30Min">30 Min</button>
+        <button class="timeOption" id="select45Min">45 Min</button>
+        <button class="timeOption" id="select1Hr">1 Hr</button>
+        <button class="timeOption" id="select1_5Hr">1.5 Hr</button>
+        <button class="timeOption" id="select2Hr">2 Hr</button>
+      </div>
+    </div>
+    <div id="auth">
+      <h2>Enter Password</h2>
+      <div id="passwordWrapper">
+        <input type="password" id="password">
+        <button id="confirmBtn">Confirm</button>
       </div>
     </div>
   </div>

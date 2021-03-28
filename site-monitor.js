@@ -4,10 +4,6 @@ var matchingSite;
 var videoSiteDetails;
 var lastRecordedTime;
 
-var isAddTimePopoverShown = false;
-var isAuthPopoverShown = false;
-var hoursToAdd = 0;
-
 const hoursToSeconds = 3600;
 const uuid = "215b0307-a5ed-46ea-85db-d4880aea34a2";
 
@@ -133,7 +129,7 @@ function initializeTimer() {
 
 function updateTimer(timeRemaining, isTimerActive, $timerTime) {
   if (timeRemaining === 0 && isTimerActive) {
-    chrome.runtime.sendMessage({ action: 'performRedirect' }, response => { });
+    sendAction('performRedirect', {});
   }
   if (!lastRecordedTime || Math.floor(timeRemaining) !== Math.floor(lastRecordedTime)) {
     let hrVal = addPrefixZero(Math.floor(timeRemaining / 3600));
@@ -151,6 +147,11 @@ function getVideoSiteDetails(url) {
 function addPrefixZero(num) {
   return ("0" + num).slice(-2);
 }
+
+var isAddTimePopoverShown = false;
+var isAuthPopoverShown = false;
+var hoursToAdd = 0;
+var pendingPasswordValidation = false;
 
 function initializeJQueryListeners() {
   const $addTimePopover = $(`#${uuid}_addTimePopover`);
@@ -256,12 +257,17 @@ function initializeJQueryListeners() {
   }
 
   function confirmAddTime() {
+    if (pendingPasswordValidation) {
+      return;
+    }
+    pendingPasswordValidation = true;
     chrome.runtime.sendMessage({ action: 'validatePassword', password: $passwordField.val() },
     response => {
       if (response && response.isPasswordValid) {
         sendAction('addTime', { time: hoursToAdd * hoursToSeconds });
         hidePopovers();
       }
+      pendingPasswordValidation = false;
     });
   }
 }
