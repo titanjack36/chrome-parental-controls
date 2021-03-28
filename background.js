@@ -102,10 +102,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case 'performRedirect':
-      chrome.tabs.update(sender.tab.id,
-        { url: chrome.extension.getURL('redirect-page.html') });
       chrome.tabs.get(sender.tab.id, tab => {
         savedSites.set(sender.tab.id, tab.url);
+        chrome.tabs.update(sender.tab.id,
+          { url: chrome.extension.getURL('redirect-page.html') });
       });
       break;
 
