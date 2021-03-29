@@ -103,7 +103,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'performRedirect':
       chrome.tabs.get(sender.tab.id, tab => {
-        savedSites.set(sender.tab.id, tab.url);
+        if (!savedSites.has(sender.tab.id)) {
+          savedSites.set(sender.tab.id, tab.url);
+        }
         chrome.tabs.update(sender.tab.id,
           { url: chrome.extension.getURL('redirect-page.html') });
       });
@@ -112,6 +114,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'restorePage':
       const matchingSiteUrl = savedSites.get(sender.tab.id);
       if (matchingSiteUrl) {
+        savedSites.delete(sender.tab.id);
         chrome.tabs.update(sender.tab.id, { url: matchingSiteUrl });
       }
       break;
