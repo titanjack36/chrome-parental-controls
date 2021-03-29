@@ -4,7 +4,17 @@ const backgroundImages = [
   "background3.jpg",
   "background4.jpg"
 ];
-const hoursToSeconds = 3600;
+const timeOptions = [
+  { id: "select10Min", timeStr: "10 Min", fullTimeStr: "10 Minutes", timeInSecs: 600 },
+  { id: "select15Min", timeStr: "15 Min", fullTimeStr: "15 Minutes", timeInSecs: 900 },
+  { id: "select20Min", timeStr: "20 Min", fullTimeStr: "20 Minutes", timeInSecs: 1200 },
+  { id: "select25Min", timeStr: "25 Min", fullTimeStr: "25 Minutes", timeInSecs: 1500 },
+  { id: "select30Min", timeStr: "30 Min", fullTimeStr: "30 Minutes", timeInSecs: 1800 },
+  { id: "select45Min", timeStr: "45 Min", fullTimeStr: "45 Minutes", timeInSecs: 2700 },
+  { id: "select1Hr", timeStr: "1 Hr", fullTimeStr: "1 Hour", timeInSecs: 3600 },
+  { id: "select1_5Hr", timeStr: "1.5 Hr", fullTimeStr: "1.5 Hours", timeInSecs: 5400 },
+  { id: "select2Hr", timeStr: "2 Hr", fullTimeStr: "2 Hours", timeInSecs: 7200 }
+];
 
 document.addEventListener("DOMContentLoaded", function (event) {
   let randIndex = Math.floor(Math.random() * backgroundImages.length);
@@ -30,7 +40,7 @@ port.onMessage.addListener(function (msg) {
 });
 
 var isAuthShown = false;
-var hoursToAdd = 0;
+var secondsToAdd = 0;
 var pendingPasswordValidation = false;
 var $passwordField;
 var $authSection;
@@ -39,35 +49,23 @@ $(document).ready(function () {
   $passwordField = $("#password");
   $authSection = $("#auth");
 
+  $("#timeOptionGroup").append(
+    timeOptions.map(
+      option => `<button class="timeOption" id="${option.id}">${option.timeStr}</button>`
+    ).reduce((optionsGroup, optionHtml) => optionsGroup + optionHtml, "")
+  );
+
   $(".timeOption").click(function () {
     const $this = $(this);
-    switch($this.attr("id")) {
-      case "select15Min":
-        hoursToAdd = 0.25;
-        break;
-      case "select30Min":
-        hoursToAdd = 0.5;
-        break;
-      case "select45Min":
-        hoursToAdd = 0.75;
-        break;
-      case "select1Hr":
-        hoursToAdd = 1;
-        break;
-      case "select1_5Hr":
-        hoursToAdd = 1.5;
-        break;
-      case "select2Hr":
-        hoursToAdd = 2;
-        break;
-      default:
-        hoursToAdd = 0;
+    const selectedOption = timeOptions.find(option => option.id === $this.attr("id"));
+    if (!selectedOption) {
+      return;
     }
+    secondsToAdd = selectedOption.timeInSecs;
     $(".timeOption").each((idx, option) => $(option).removeClass("selected"));
-    if (hoursToAdd != 0) {
-      $this.addClass("selected");
-      $authSection.show();
-    }
+    $this.addClass("selected");
+    $authSection.show();
+    $passwordField.focus();
   });
 
   $(`#confirmBtn`).click(function () {
@@ -89,7 +87,7 @@ function confirmAddTime() {
   chrome.runtime.sendMessage({ action: 'validatePassword', password: $passwordField.val() },
   response => {
     if (response && response.isPasswordValid) {
-      sendAction('addTime', { time: hoursToAdd * hoursToSeconds });
+      sendAction('addTime', { time: secondsToAdd });
       $(".timeOption").each((idx, option) => $(option).removeClass("selected"));
       $authSection.hide();
       sendAction('restorePage', {});

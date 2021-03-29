@@ -4,24 +4,34 @@ var matchingSite;
 var videoSiteDetails;
 var lastRecordedTime;
 
-const hoursToSeconds = 3600;
 const uuid = "215b0307-a5ed-46ea-85db-d4880aea34a2";
+const timeOptions = [
+  { id: "select10Min", timeStr: "10 Min", fullTimeStr: "10 Minutes", timeInSecs: 600 },
+  { id: "select15Min", timeStr: "15 Min", fullTimeStr: "15 Minutes", timeInSecs: 900 },
+  { id: "select20Min", timeStr: "20 Min", fullTimeStr: "20 Minutes", timeInSecs: 1200 },
+  { id: "select25Min", timeStr: "25 Min", fullTimeStr: "25 Minutes", timeInSecs: 1500 },
+  { id: "select30Min", timeStr: "30 Min", fullTimeStr: "30 Minutes", timeInSecs: 1800 },
+  { id: "select45Min", timeStr: "45 Min", fullTimeStr: "45 Minutes", timeInSecs: 2700 },
+  { id: "select1Hr", timeStr: "1 Hr", fullTimeStr: "1 Hour", timeInSecs: 3600 },
+  { id: "select1_5Hr", timeStr: "1.5 Hr", fullTimeStr: "1.5 Hours", timeInSecs: 5400 },
+  { id: "select2Hr", timeStr: "2 Hr", fullTimeStr: "2 Hours", timeInSecs: 7200 }
+];
+const popoverDimensionsCss = getPopoverDimensionsCss();
 
 var timerHtml = `
 <div id="215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper">
   <div id="${uuid}_addTimePopover" class="${uuid}_popover">
-    <div class="${uuid}_title">Select Amount</div>
-    <div class="${uuid}_timeOptionRow">
-      <button class="${uuid}_timeOption" id="${uuid}_select15Min">15 Min</button>
-      <button class="${uuid}_timeOption" id="${uuid}_select30Min">30 Min</button>
-    </div>
-    <div class="${uuid}_timeOptionRow">
-      <button class="${uuid}_timeOption" id="${uuid}_select45Min">45 Min</button>
-      <button class="${uuid}_timeOption" id="${uuid}_select1Hr">1 Hr</button>
-    </div>
-    <div class="${uuid}_timeOptionRow">
-      <button class="${uuid}_timeOption" id="${uuid}_select1_5Hr">1.5 Hr</button>
-      <button class="${uuid}_timeOption" id="${uuid}_select2Hr">2 Hr</button>
+    <div class="${uuid}_title">Add Time</div>
+    <div id="${uuid}_timeOptionGroup">
+      ${
+        timeOptions.map(option => {
+          return `
+          <button class="${uuid}_timeOption" id="${uuid}_${option.id}">
+            ${option.timeStr}
+          </button>
+          `;
+        }).reduce((optionsGroup, optionHtml) => optionsGroup + optionHtml, "")
+      }
     </div>
   </div>
   <div id="${uuid}_authPopover" class="${uuid}_popover">
@@ -150,7 +160,7 @@ function addPrefixZero(num) {
 
 var isAddTimePopoverShown = false;
 var isAuthPopoverShown = false;
-var hoursToAdd = 0;
+var secondsToAdd = 0;
 var pendingPasswordValidation = false;
 
 function initializeJQueryListeners() {
@@ -158,6 +168,10 @@ function initializeJQueryListeners() {
   const $authPopover = $(`#${uuid}_authPopover`);
   const $addTimePrompt = $(`#${uuid}_prompt`);
   const $passwordField = $(`#${uuid}_password`);
+
+  $(`.${uuid}_popover`).each((idx, popover) => {
+    $(popover).css(popoverDimensionsCss);
+  });
 
   $(document).click(function (event) {
     if (!(isAddTimePopoverShown || isAuthPopoverShown)) {
@@ -182,34 +196,13 @@ function initializeJQueryListeners() {
   });
 
   $(`.${uuid}_timeOption`).click(function () {
-    switch($(this).attr("id")) {
-      case `${uuid}_select15Min`:
-        hoursToAdd = 0.25;
-        setAddTimePrompt("15 minutes");
-        break;
-      case `${uuid}_select30Min`:
-        hoursToAdd = 0.5;
-        setAddTimePrompt("30 minutes");
-        break;
-      case `${uuid}_select45Min`:
-        hoursToAdd = 0.75;
-        setAddTimePrompt("45 minutes");
-        break;
-      case `${uuid}_select1Hr`:
-        hoursToAdd = 1;
-        setAddTimePrompt("1 hour");
-        break;
-      case `${uuid}_select1_5Hr`:
-        hoursToAdd = 1.5;
-        setAddTimePrompt("1.5 hours");
-        break;
-      case `${uuid}_select2Hr`:
-        hoursToAdd = 2;
-        setAddTimePrompt("2 hours");
-        break;
-      default:
-        hoursToAdd = 0;
+    const selectedOption = timeOptions.find(
+        option => `${uuid}_${option.id}` === $(this).attr("id"));
+    if (!selectedOption) {
+      return;
     }
+    secondsToAdd = selectedOption.timeInSecs;
+    $addTimePrompt.text(`Add ${selectedOption.fullTimeStr} to the timer?`);
     showAuthPopover();
   });
 
@@ -241,6 +234,7 @@ function initializeJQueryListeners() {
     isAddTimePopoverShown = false;
     $authPopover.show();
     isAuthPopoverShown = true;
+    $passwordField.focus();
   }
 
   function hidePopovers() {
@@ -252,10 +246,6 @@ function initializeJQueryListeners() {
     $passwordField.val("");
   }
 
-  function setAddTimePrompt(timeStr) {
-    $addTimePrompt.text(`Add ${timeStr} to the timer?`);
-  }
-
   function confirmAddTime() {
     if (pendingPasswordValidation) {
       return;
@@ -264,7 +254,7 @@ function initializeJQueryListeners() {
     chrome.runtime.sendMessage({ action: 'validatePassword', password: $passwordField.val() },
     response => {
       if (response && response.isPasswordValid) {
-        sendAction('addTime', { time: hoursToAdd * hoursToSeconds });
+        sendAction('addTime', { time: secondsToAdd });
         hidePopovers();
       }
       pendingPasswordValidation = false;
@@ -274,4 +264,25 @@ function initializeJQueryListeners() {
 
 function sendAction(action, payload) {
   chrome.runtime.sendMessage({action, ...payload}, function (response) { });
+}
+
+function getPopoverDimensionsCss() {
+  const timeOptionDimensions = 100;
+  const titleHeight = 30;
+  const padding = 20;
+
+  // Behaviour:
+  // # Options    Row Count   Col Count
+  // 1            1           1
+  // 2            2           1
+  // 3            2           2
+  // 4            2           2
+  // 5            3           2
+  // ...
+  const rowCount = Math.ceil(Math.sqrt(timeOptions.length));
+  const colCount = Math.ceil(timeOptions.length / rowCount);
+  const popoverWidth = timeOptionDimensions * rowCount + padding;
+  const popoverHeight = timeOptionDimensions * colCount + padding + titleHeight;
+
+  return { "width": `${popoverWidth}px`, "height": `${popoverHeight}px` };
 }

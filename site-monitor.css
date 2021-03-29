@@ -47,8 +47,6 @@
   background: rgb(240,105,38);
   border-radius: 15px;
   margin-bottom: 10px;
-  height: 350px;
-  width: 220px;
   pointer-events: all;
 }
 
@@ -59,8 +57,9 @@
   margin-top: 10px;
 }
 
-[class='215b0307-a5ed-46ea-85db-d4880aea34a2_timeOptionRow'] {
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_timeOptionGroup'] {
   display: flex;
+  flex-wrap: wrap;
   margin-top: 20px;
 }
 
@@ -68,6 +67,7 @@
   width: 80px;
   height: 80px;
   margin-left: 20px;
+  margin-bottom: 20px;
   background: transparent;
   border: 3px solid white;
   border-radius: 15px;
