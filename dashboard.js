@@ -23,7 +23,7 @@ chrome.runtime.sendMessage({ action: 'getTimerState' }, async function (response
     setTimeout(() => $("#toggleTimer").prop("checked", response.isTimerActive), 100);
   }
 });
-chrome.runtime.sendMessage({ action: 'getWatchSiteListAndVideoSites' }, async function (response) {
+chrome.runtime.sendMessage({ action: 'getExtConfig' }, async function (response) {
   if (response) {
     if (response.watchSiteList) {
       watchSiteList = response.watchSiteList;

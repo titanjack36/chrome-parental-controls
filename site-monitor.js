@@ -18,7 +18,7 @@ const timeOptions = [
 ];
 const popoverDimensionsCss = getPopoverDimensionsCss();
 
-var timerHtml = `
+const timerHtml = `
 <div id="215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper">
   <div id="${uuid}_addTimePopover" class="${uuid}_popover">
     <div class="${uuid}_title">Add Time</div>
@@ -51,94 +51,100 @@ var timerHtml = `
   </div>
 </div>
 `;
+$("body").append(timerHtml);
 
-chrome.runtime.sendMessage({ action: 'getWatchSiteListAndVideoSites' },
-  response => {
-    if (response) {
-      if (response.watchSiteList) {
-        watchSiteList = response.watchSiteList;
-      }
-      if (response.videoSites) {
-        videoSites = response.videoSites;
-      }
-      main();
-    }
-  });
+const $mainWrapper = $(`#${uuid}_mainWrapper`);
+$mainWrapper.hide();
+const $timerTime = $mainWrapper.find(`#${uuid}_time`);
 
-function main() {
-  matchingSite = watchSiteList.find(site => location.href.includes(site.url));
-
-  if (matchingSite) {
-    const $body = $("body");
-    $body.append(timerHtml);
-    initializeTimer();
-    initializeJQueryListeners();
+chrome.runtime.sendMessage({ action: 'getTimerStateAndExtConfig' }, response => {
+  if (!response || !response.timerState || !response.extConfig) {
+    return;
   }
+  const { timerState, extConfig } = response;
+  if (extConfig.watchSiteList) {
+    watchSiteList = extConfig.watchSiteList;
+  }
+  if (extConfig.videoSites) {
+    videoSites = extConfig.videoSites;
+  }
+  matchingSite = watchSiteList.find(site => location.href.includes(site.url));
+  if (matchingSite && timerState.isTimerActive) {
+    showTimer();
+  }
+});
 
-  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-    let response;
-    if (!request || !request.action) {
-      sendResponse(response);
-      return true;
-    }
-    switch (request.action) {
-      case 'checkIsTabActive':
-        let tabIsActive = false;
-        if (matchingSite) {
-          if (matchingSite.isVideoSite && matchingSite.timeVideoOnly) {
-            if (!videoSiteDetails) {
-              videoSiteDetails = getVideoSiteDetails(matchingSite.url);
-            }
-            const selectorFound = !!$(videoSiteDetails.selector).length;
-            tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
-          } else {
-            tabIsActive = true;
-          }
-          response = { tabIsActive: tabIsActive };
-        }
-        break;
-
-      case 'setWatchSiteList':
-        if (request.watchSiteList) {
-          watchSiteList = request.watchSiteList;
-          matchingSite = watchSiteList.find(
-            site => location.href.includes(site.url)
-          );
-        }
-        break;
-    }
+chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+  let response;
+  if (!request || !request.action) {
     sendResponse(response);
     return true;
-  });
-}
+  }
+  switch (request.action) {
+    case 'checkIsTabActive':
+      let tabIsActive = false;
+      if (matchingSite) {
+        if (matchingSite.isVideoSite && matchingSite.timeVideoOnly) {
+          if (!videoSiteDetails) {
+            videoSiteDetails = getVideoSiteDetails(matchingSite.url);
+          }
+          const selectorFound = !!$(videoSiteDetails.selector).length;
+          tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
+        } else {
+          tabIsActive = true;
+        }
+        response = { tabIsActive: tabIsActive };
+      }
+      break;
 
-function initializeTimer() {
-  const $mainWrapper = $(`#${uuid}_mainWrapper`);
-  const $timerTime = $mainWrapper.find(`#${uuid}_time`);
-  var isTimerDisplayed = false;
-  $mainWrapper.hide();
+    case 'setWatchSiteList':
+      if (request.watchSiteList) {
+        watchSiteList = request.watchSiteList;
+        matchingSite = watchSiteList.find(site => location.href.includes(site.url));
+      }
+      if (matchingSite && request.isTimerActive) {
+        showTimer();
+      }
+      break;
 
-  var port = chrome.runtime.connect({ name: "timer" });
-  var interval = setInterval(() => {
+    case 'updateSiteTimerState':
+      if (matchingSite && request.isTimerActive) {
+        showTimer();
+      } else {
+        hideTimer();
+      }
+      break;
+  }
+  sendResponse(response);
+  return true;
+});
+
+const port = chrome.runtime.connect({ name: "timer" });
+port.onMessage.addListener(msg => {
+  if (!msg || msg.timeRemaining === undefined) {
+    return;
+  }
+  updateTimer(msg.timeRemaining);
+});
+
+var getTimeInterval;
+function showTimer() {
+  $mainWrapper.show();
+  getTimeInterval = setInterval(() => {
     port.postMessage({ action: 'getTime' });
   }, 100);
-  port.onMessage.addListener(msg => {
-    if (!msg || msg.timeRemaining === undefined) {
-      return;
-    }
-    if (msg.isTimerActive && !isTimerDisplayed) {
-      $mainWrapper.show();
-      isTimerDisplayed = true;
-    } else if (!msg.isTimerActive && isTimerDisplayed) {
-      $mainWrapper.hide();
-      isTimerDisplayed = false;
-    }
-    updateTimer(msg.timeRemaining, msg.isTimerActive, $timerTime);
-  });
 }
 
-function updateTimer(timeRemaining, isTimerActive, $timerTime) {
-  if (timeRemaining === 0 && isTimerActive) {
+function hideTimer() {
+  $mainWrapper.hide();
+  if (getTimeInterval !== undefined) {
+    clearInterval(getTimeInterval);
+    getTimeInterval = undefined;
+  }
+}
+
+function updateTimer(timeRemaining) {
+  if (timeRemaining === 0) {
     sendAction('performRedirect', {});
   }
   if (!lastRecordedTime || Math.floor(timeRemaining) !== Math.floor(lastRecordedTime)) {
@@ -163,103 +169,101 @@ var isAuthPopoverShown = false;
 var secondsToAdd = 0;
 var pendingPasswordValidation = false;
 
-function initializeJQueryListeners() {
-  const $addTimePopover = $(`#${uuid}_addTimePopover`);
-  const $authPopover = $(`#${uuid}_authPopover`);
-  const $addTimePrompt = $(`#${uuid}_prompt`);
-  const $passwordField = $(`#${uuid}_password`);
+const $addTimePopover = $(`#${uuid}_addTimePopover`);
+const $authPopover = $(`#${uuid}_authPopover`);
+const $addTimePrompt = $(`#${uuid}_prompt`);
+const $passwordField = $(`#${uuid}_password`);
 
-  $(`.${uuid}_popover`).each((idx, popover) => {
-    $(popover).css(popoverDimensionsCss);
-  });
+$(`.${uuid}_popover`).each((idx, popover) => {
+  $(popover).css(popoverDimensionsCss);
+});
 
-  $(document).click(function (event) {
-    if (!(isAddTimePopoverShown || isAuthPopoverShown)) {
-      return;
-    }
-    var $target = $(event.target);
-    if ($target.closest(`#${uuid}_addTimeBtn`).length) {
-      return;
-    }
-    if(!$target.closest(`#${uuid}_addTimePopover`).length &&
-        !$target.closest(`#${uuid}_authPopover`).length) {
-      hidePopovers();
-    }
-  })
+$(document).click(function (event) {
+  if (!(isAddTimePopoverShown || isAuthPopoverShown)) {
+    return;
+  }
+  var $target = $(event.target);
+  if ($target.closest(`#${uuid}_addTimeBtn`).length) {
+    return;
+  }
+  if(!$target.closest(`#${uuid}_addTimePopover`).length &&
+      !$target.closest(`#${uuid}_authPopover`).length) {
+    hidePopovers();
+  }
+})
 
-  $(`#${uuid}_addTimeBtn`).click(function () {
-    if (isAddTimePopoverShown || isAuthPopoverShown) {
-      hidePopovers();
-    } else {
-      showAddTimePopover();
-    }
-  });
-
-  $(`.${uuid}_timeOption`).click(function () {
-    const selectedOption = timeOptions.find(
-        option => `${uuid}_${option.id}` === $(this).attr("id"));
-    if (!selectedOption) {
-      return;
-    }
-    secondsToAdd = selectedOption.timeInSecs;
-    $addTimePrompt.text(`Add ${selectedOption.fullTimeStr} to the timer?`);
-    showAuthPopover();
-  });
-
-  $(`#${uuid}_backBtn`).click(function () {
+$(`#${uuid}_addTimeBtn`).click(function () {
+  if (isAddTimePopoverShown || isAuthPopoverShown) {
+    hidePopovers();
+  } else {
     showAddTimePopover();
-  });
+  }
+});
 
-  $(`#${uuid}_confirmBtn`).click(function () {
+$(`.${uuid}_timeOption`).click(function () {
+  const selectedOption = timeOptions.find(
+      option => `${uuid}_${option.id}` === $(this).attr("id"));
+  if (!selectedOption) {
+    return;
+  }
+  secondsToAdd = selectedOption.timeInSecs;
+  $addTimePrompt.text(`Add ${selectedOption.fullTimeStr} to the timer?`);
+  showAuthPopover();
+});
+
+$(`#${uuid}_backBtn`).click(function () {
+  showAddTimePopover();
+});
+
+$(`#${uuid}_confirmBtn`).click(function () {
+  confirmAddTime();
+});
+
+$passwordField.on('keyup', function (e) {
+  if (e.keyCode === 13) {
     confirmAddTime();
-  });
+  }
+});
 
-  $passwordField.on('keyup', function (e) {
-    if (e.keyCode === 13) {
-      confirmAddTime();
+function showAddTimePopover() {
+  $addTimePopover.show();
+  isAddTimePopoverShown = true;
+  $authPopover.hide();
+  isAuthPopoverShown = false;
+  $addTimePrompt.text("");
+  $passwordField.val("");
+}
+
+function showAuthPopover() {
+  $addTimePopover.hide();
+  isAddTimePopoverShown = false;
+  $authPopover.show();
+  isAuthPopoverShown = true;
+  $passwordField.focus();
+}
+
+function hidePopovers() {
+  $addTimePopover.hide();
+  isAddTimePopoverShown = false;
+  $authPopover.hide();
+  isAuthPopoverShown = false;
+  $addTimePrompt.text("");
+  $passwordField.val("");
+}
+
+function confirmAddTime() {
+  if (pendingPasswordValidation) {
+    return;
+  }
+  pendingPasswordValidation = true;
+  chrome.runtime.sendMessage({ action: 'validatePassword', password: $passwordField.val() },
+  response => {
+    if (response && response.isPasswordValid) {
+      sendAction('addTime', { time: secondsToAdd });
+      hidePopovers();
     }
+    pendingPasswordValidation = false;
   });
-
-  function showAddTimePopover() {
-    $addTimePopover.show();
-    isAddTimePopoverShown = true;
-    $authPopover.hide();
-    isAuthPopoverShown = false;
-    $addTimePrompt.text("");
-    $passwordField.val("");
-  }
-  
-  function showAuthPopover() {
-    $addTimePopover.hide();
-    isAddTimePopoverShown = false;
-    $authPopover.show();
-    isAuthPopoverShown = true;
-    $passwordField.focus();
-  }
-
-  function hidePopovers() {
-    $addTimePopover.hide();
-    isAddTimePopoverShown = false;
-    $authPopover.hide();
-    isAuthPopoverShown = false;
-    $addTimePrompt.text("");
-    $passwordField.val("");
-  }
-
-  function confirmAddTime() {
-    if (pendingPasswordValidation) {
-      return;
-    }
-    pendingPasswordValidation = true;
-    chrome.runtime.sendMessage({ action: 'validatePassword', password: $passwordField.val() },
-    response => {
-      if (response && response.isPasswordValid) {
-        sendAction('addTime', { time: secondsToAdd });
-        hidePopovers();
-      }
-      pendingPasswordValidation = false;
-    });
-  }
 }
 
 function sendAction(action, payload) {

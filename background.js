@@ -8,30 +8,30 @@ var timerState = {
   timeRemaining: 0, /* time is recorded in seconds */
   baseTime: 0 /* time is recorded in seconds */
 };
-var timerConfig = {
+var extConfig = {
   useAutoReset: false,
   useWatchList: false,
-  useBreaks: false
-}
+  useBreaks: false,
+  watchSiteList: [],
+  videoSites: [
+    { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true },
+    { url: "tfo.org", selector: '.jw-state-playing', activateOnSelectorFound: true },
+    { url: "tvokids.com", selector: '.vjs-playing', activateOnSelectorFound: true }
+  ]
+};
 
 var savedSites = new Map();
-var watchSiteList = [];
-const videoSites = [
-  { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true },
-  { url: "tfo.org", selector: '.jw-state-playing', activateOnSelectorFound: true },
-  { url: "tvokids.com", selector: '.vjs-playing', activateOnSelectorFound: true }
-];
 
-chrome.storage.local.get(['timerState', 'lastRecordedTime', 'watchSiteList', 'password'], result => {
+chrome.storage.local.get(['extConfig', 'timerState', 'lastRecordedTime', 'password'], result => {
   if (!result) {
     return;
   }
+  if (result.extConfig) {
+    extConfig = { ...result.extConfig, videoSites: extConfig.videoSites };
+  }
   if (result.timerState) {
     timerState = result.timerState;
-    timerState.isTimerRunning = !timerConfig.useWatchList;
-  }
-  if (result.watchSiteList) {
-    watchSiteList = result.watchSiteList;
+    timerState.isTimerRunning = !extConfig.useWatchList;
   }
   if (result.password) {
     savedPassword = result.password;
@@ -40,7 +40,7 @@ chrome.storage.local.get(['timerState', 'lastRecordedTime', 'watchSiteList', 'pa
     lastRecordedTime = new Date(JSON.parse(result.lastRecordedTime));
   }
   // If not using watch list, then include time elapsed when browser was closed
-  currentTime = !timerConfig.useWatchList && lastRecordedTime ? lastRecordedTime : new Date();
+  currentTime = !extConfig.useWatchList && lastRecordedTime ? lastRecordedTime : new Date();
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -64,8 +64,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       response = timerState;
       break;
 
-    case 'getTimerConfig':
-      response = timerConfig;
+    case 'getExtConfig':
+      response = extConfig;
+      break;
+
+    case 'getTimerStateAndExtConfig':
+      response = { timerState, extConfig };
       break;
 
     case 'setTime':
@@ -89,15 +93,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case 'setTimerActive':
       timerState.isTimerActive = !!request.timerActive;
       saveTimerState();
+      sendActionToAllTabs('updateSiteTimerState', { isTimerActive: timerState.isTimerActive });
       break;
 
     case 'setUseAutoReset':
-      timerConfig.useAutoReset = !!request.useAutoReset;
+      extConfig.useAutoReset = !!request.useAutoReset;
       saveTimerState();
       break;
 
     case 'setUseWatchList':
-      timerConfig.useWatchList = !!request.useWatchList;
+      extConfig.useWatchList = !!request.useWatchList;
       saveTimerState();
       break;
 
@@ -121,14 +126,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'setWatchSiteList':
       if (request.watchSiteList) {
-        watchSiteList = request.watchSiteList;
-        chrome.storage.local.set({ watchSiteList: watchSiteList }, () => { });
-        updateWatchSiteListForAllTabs();
+        extConfig.watchSiteList = request.watchSiteList;
+        saveExtConfig();
+        sendActionToAllTabs('setWatchSiteList',
+          { watchSiteList: extConfig.watchSiteList, isTimerActive: timerState.isTimerActive });
       }
-      break;
-
-    case 'getWatchSiteListAndVideoSites':
-      response = { watchSiteList: watchSiteList, videoSites: videoSites };
       break;
 
     case 'setPassword':
@@ -176,7 +178,7 @@ var dateCheckInterval = setInterval(() => {
   if (!currentTime) {
     return;
   }
-  if (timerConfig.useAutoReset) {
+  if (extConfig.useAutoReset) {
     let currentDate = getDateFromDateTime(currentTime);
     let lastRecordedDate = getDateFromDateTime(lastRecordedTime);
     if (lastRecordedDate && currentDate.getTime() !== lastRecordedDate.getTime()) {
@@ -214,7 +216,7 @@ var timerSyncInterval = setInterval(() => {
 var timerSaveInterval = setInterval(() => saveTimerState(), 50000);
 
 async function checkForActiveTabs(tabs) {
-  if (!timerConfig.useWatchList) {
+  if (!extConfig.useWatchList) {
     timerState.isTimerRunning = true;
     return;
   }
@@ -242,17 +244,23 @@ function saveTimerState() {
   }, () => { });
 }
 
-function updateWatchSiteListForAllTabs() {
+function saveExtConfig() {
+  chrome.storage.local.set({
+    extConfig: { ...extConfig, videoSites: [] }
+  }, () => { });
+}
+
+function sendActionToAllTabs(action, payload) {
   chrome.tabs.query({}, tabs => {
     tabs.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id,
-        { action: 'setWatchSiteList', watchSiteList: watchSiteList },
+      chrome.tabs.sendMessage(tab.id, { action, ...payload },
         response => {
           var lastError = chrome.runtime.lastError;
           if (lastError) {
             return;
           }
-        });
+        }
+      );
     });
   });
 }
