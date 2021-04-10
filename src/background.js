@@ -112,7 +112,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           savedSites.set(sender.tab.id, tab.url);
         }
         chrome.tabs.update(sender.tab.id,
-          { url: chrome.extension.getURL('redirect-page.html') });
+          { url: chrome.extension.getURL('src/redirect-page.html') });
       });
       break;
 

@@ -6,7 +6,7 @@ chrome.storage.local.get(['password'], function (result) {
   } else {
     setAuthenticated(true);
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('auth-reset.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/auth-reset.html') });
     });
   }
 });
@@ -27,7 +27,7 @@ function submitPassword() {
   if (password === savedPassword) {
     setAuthenticated(true);
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('dashboard.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/dashboard.html') });
     });
   }
 }

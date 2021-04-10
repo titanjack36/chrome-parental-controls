@@ -1,7 +1,7 @@
 chrome.runtime.sendMessage({ action: 'isLoggedIn' }, function (response) {
   if (!(response && response.isAuth)) {
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('auth.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/auth.html') });
     });
   }
 });
@@ -24,7 +24,7 @@ function submitPassword() {
     sendAction('setPassword', { newPassword });
     sendAction('login', {});
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('dashboard.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/dashboard.html') });
     });
   }
 }

@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     splashScreen.classList.add('fadeout');
     body.style.backgroundImage = `url(${this.src})`;
   }
-  img.src = `assets/${backgroundImages[randIndex]}`;
+  img.src = `../assets/${backgroundImages[randIndex]}`;
 });
 
 var port = chrome.runtime.connect({ name: "timer" });

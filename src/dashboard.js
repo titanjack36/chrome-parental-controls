@@ -11,7 +11,7 @@ const listBtnRegex = /[A-Za-z]+([0-9])/;
 chrome.runtime.sendMessage({ action: 'isLoggedIn' }, function (response) {
   if (!(response && response.isAuth)) {
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('auth.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/auth.html') });
     });
   }
 });
@@ -92,7 +92,7 @@ $(document).ready(function () {
   $("#changePassword").click(function () {
     chrome.runtime.sendMessage({ action: 'login' }, function (response) { });
     chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('auth-reset.html') });
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/auth-reset.html') });
     });
   });
 
@@ -213,10 +213,10 @@ function updateWatchSiteList() {
       <div class="actions d-flex">
         ${site.isVideoSite ?
         `<button type="button" class="video-site-btn" data-toggle="popover">
-          <img src="assets/icons/video-icon.svg" alt="Video Site Options">
+          <img src="../assets/icons/video-icon.svg" alt="Video Site Options">
         </button>` : ''}
         <button type="button" class="delete-site-btn" data-toggle="popover">
-          <img src="assets/icons/close-icon.svg">
+          <img src="../assets/icons/close-icon.svg">
         </button>
       </div>
     </div>`);

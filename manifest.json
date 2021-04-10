@@ -4,15 +4,15 @@
   "description": "An extension which controls how much time can be spent on websites",
   "version": "1.1.6",
   "icons": {
-    "128": "icon_128.png"
+    "128": "assets/icons/app_icon_128.png"
   },
   "browser_action": {
-    "default_icon": "icon.png",
-    "default_popup": "popup.html"
+    "default_icon": "assets/icons/app_icon.png",
+    "default_popup": "src/popup.html"
   },
   "background": {
     "scripts": [
-      "background.js"
+      "src/background.js"
     ]
   },
   "content_scripts": [
@@ -22,11 +22,11 @@
       ],
       "run_at": "document_end",
       "css": [
-        "site-monitor.css"
+        "src/site-monitor.css"
       ],
       "js": [
         "thirdParty/jquery-3.5.1.min.js",
-        "site-monitor.js"
+        "src/site-monitor.js"
       ]
     }
   ],
