@@ -1,23 +1,39 @@
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper'],
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper'] * {
+  all: unset;
+}
+
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper'] {
   position: fixed;
   left: 0;
   bottom: 0;
   width: 100%;
-  color: white;
-  font-size: 18px;
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
   z-index: 100000;
   padding: 10px 0;
-  font-family: Arial, Helvetica, sans-serif;
   pointer-events: none;
   opacity: 0.75;
+  color: white;
+  font-size: 18px;
+  font-family: Arial, Helvetica, sans-serif;
+  line-height: normal;
 }
 
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper']:hover {
   opacity: 1;
+}
+
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper'] button {
+  background: transparent;
+  color: white;
+  cursor: pointer;
+}
+
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper'] button:hover {
+  background: #ffffff50;
 }
 
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_timer'] {
@@ -31,15 +47,9 @@
 
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_addTimeBtn'] {
   margin-left: 10px;
-  background: transparent;
-  border: 2px solid white;
+  padding: 0 5px;
   border-radius: 3px;
-  color: white;
-}
-
-[id='215b0307-a5ed-46ea-85db-d4880aea34a2_addTimeBtn']:hover {
-  cursor: pointer;
-  background: #ffffff50;
+  border: 2px solid white;
 }
 
 [class='215b0307-a5ed-46ea-85db-d4880aea34a2_popover'] {
@@ -64,23 +74,15 @@
 }
 
 [class='215b0307-a5ed-46ea-85db-d4880aea34a2_timeOption'] {
-  width: 80px;
-  height: 80px;
+  width: 74px;
+  height: 74px;
   margin-left: 20px;
   margin-bottom: 20px;
-  background: transparent;
-  border: 3px solid white;
-  border-radius: 15px;
-  font-size: 18px;
-  color: white;
   display: flex;
   justify-content: center;
   align-items: center;
-  cursor: pointer;
-}
-
-[class='215b0307-a5ed-46ea-85db-d4880aea34a2_timeOption']:hover {
-  background: #ffffff3a;
+  border-radius: 15px;
+  border: 3px solid white;
 }
 
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_authWrapper'] {
@@ -97,6 +99,9 @@
   border-radius: 5px;
   font-size: 18px;
   height: 35px;
+  background: white;
+  color: black;
+  padding: 2px;
 }
 
 [class='215b0307-a5ed-46ea-85db-d4880aea34a2_buttonRow'] {
@@ -107,17 +112,10 @@
 }
 
 [class='215b0307-a5ed-46ea-85db-d4880aea34a2_action'] {
-  background: transparent;
-  border: 3px solid white;
-  border-radius: 5px;
   height: 40px;
-  color: white;
-  font-size: 16px;
-  cursor: pointer;
-}
-
-[class='215b0307-a5ed-46ea-85db-d4880aea34a2_action']:hover {
-  background: #ffffff3a;
+  border-radius: 5px;
+  padding: 0 10px;
+  border: 3px solid white;
 }
 
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_prompt'] {

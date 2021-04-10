@@ -1,6 +1,8 @@
 var watchSiteList = [];
 var videoSites = [];
 var matchingSite;
+var matchingEmbeddedSites = [];
+var removedIframes = [];
 var videoSiteDetails;
 var lastRecordedTime;
 
@@ -19,8 +21,8 @@ const timeOptions = [
 const popoverDimensionsCss = getPopoverDimensionsCss();
 
 const timerHtml = `
-<div id="215b0307-a5ed-46ea-85db-d4880aea34a2_mainWrapper">
-  <div id="${uuid}_addTimePopover" class="${uuid}_popover">
+<div id="${uuid}_mainWrapper">
+  <div id="${uuid}_addTimePopover" class="${uuid}_popover" style="${popoverDimensionsCss}">
     <div class="${uuid}_title">Add Time</div>
     <div id="${uuid}_timeOptionGroup">
       ${
@@ -34,7 +36,7 @@ const timerHtml = `
       }
     </div>
   </div>
-  <div id="${uuid}_authPopover" class="${uuid}_popover">
+  <div id="${uuid}_authPopover" class="${uuid}_popover" style="${popoverDimensionsCss}">
     <div id="${uuid}_authWrapper">
       <div class="${uuid}_title">Enter Password</div>
       <input type="password" id="${uuid}_password">
@@ -46,12 +48,18 @@ const timerHtml = `
     </div>
   </div>
   <div id="${uuid}_timer">
-    <span id="${uuid}_time">01h 25m 32s</span>
+    <span id="${uuid}_time">00h 00m 00s</span>
     <button id="${uuid}_addTimeBtn">+</button>
   </div>
 </div>
 `;
 $("body").append(timerHtml);
+
+const embeddedSiteBlockedHtml = `
+<div id="${uuid}_blockContent">
+  
+</div>
+`;
 
 const $mainWrapper = $(`#${uuid}_mainWrapper`);
 $mainWrapper.hide();
@@ -69,9 +77,8 @@ chrome.runtime.sendMessage({ action: 'getTimerStateAndExtConfig' }, response => 
     videoSites = extConfig.videoSites;
   }
   matchingSite = watchSiteList.find(site => location.href.includes(site.url));
-  if (matchingSite && timerState.isTimerActive) {
-    showTimer();
-  }
+  matchingEmbeddedSites = findMatchingEmbeddedSites();
+  updateSiteTimerState(timerState.isTimerActive);
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -83,36 +90,33 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   switch (request.action) {
     case 'checkIsTabActive':
       let tabIsActive = false;
-      if (matchingSite) {
-        if (matchingSite.isVideoSite && matchingSite.timeVideoOnly) {
-          if (!videoSiteDetails) {
-            videoSiteDetails = getVideoSiteDetails(matchingSite.url);
+      [matchingSite, ...matchingEmbeddedSites].filter(site => site !== undefined)
+        .forEach(site => {
+          if (site.isVideoSite && site.timeVideoOnly) {
+            if (!videoSiteDetails) {
+              videoSiteDetails = getVideoSiteDetails(site.url);
+            }
+            const selectorFound = !!$(videoSiteDetails.selector).length;
+            tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
+          } else {
+            tabIsActive = true;
           }
-          const selectorFound = !!$(videoSiteDetails.selector).length;
-          tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
-        } else {
-          tabIsActive = true;
-        }
-        response = { tabIsActive: tabIsActive };
-      }
+        });
+      response = { tabIsActive: tabIsActive };
       break;
 
     case 'setWatchSiteList':
+      matchingEmbeddedSites = findMatchingEmbeddedSites();
       if (request.watchSiteList) {
         watchSiteList = request.watchSiteList;
         matchingSite = watchSiteList.find(site => location.href.includes(site.url));
       }
-      if (matchingSite && request.isTimerActive) {
-        showTimer();
-      }
+      updateSiteTimerState(request.isTimerActive);
       break;
 
     case 'updateSiteTimerState':
-      if (matchingSite && request.isTimerActive) {
-        showTimer();
-      } else {
-        hideTimer();
-      }
+      matchingEmbeddedSites = findMatchingEmbeddedSites();
+      updateSiteTimerState(request.isTimerActive);
       break;
   }
   sendResponse(response);
@@ -127,12 +131,19 @@ port.onMessage.addListener(msg => {
   updateTimer(msg.timeRemaining);
 });
 
+var scanEmbeddedSitesInterval = setInterval(() => {
+  matchingEmbeddedSites = findMatchingEmbeddedSites();
+  updateSiteTimerState();
+}, 5000);
+
 var getTimeInterval;
 function showTimer() {
   $mainWrapper.show();
-  getTimeInterval = setInterval(() => {
-    port.postMessage({ action: 'getTime' });
-  }, 100);
+  if (getTimeInterval === undefined) {
+    getTimeInterval = setInterval(() => {
+      port.postMessage({ action: 'getTime' });
+    }, 100);
+  }
 }
 
 function hideTimer() {
@@ -145,7 +156,11 @@ function hideTimer() {
 
 function updateTimer(timeRemaining) {
   if (timeRemaining === 0) {
-    sendAction('performRedirect', {});
+    if (matchingSite) {
+      sendAction('performRedirect', {});
+    } else if (matchingEmbeddedSites.length > 0) {
+      blockMatchingEmbeddedSites();
+    }
   }
   if (!lastRecordedTime || Math.floor(timeRemaining) !== Math.floor(lastRecordedTime)) {
     let hrVal = addPrefixZero(Math.floor(timeRemaining / 3600));
@@ -173,10 +188,6 @@ const $addTimePopover = $(`#${uuid}_addTimePopover`);
 const $authPopover = $(`#${uuid}_authPopover`);
 const $addTimePrompt = $(`#${uuid}_prompt`);
 const $passwordField = $(`#${uuid}_password`);
-
-$(`.${uuid}_popover`).each((idx, popover) => {
-  $(popover).css(popoverDimensionsCss);
-});
 
 $(document).click(function (event) {
   if (!(isAddTimePopoverShown || isAuthPopoverShown)) {
@@ -288,5 +299,74 @@ function getPopoverDimensionsCss() {
   const popoverWidth = timeOptionDimensions * rowCount + padding;
   const popoverHeight = timeOptionDimensions * colCount + padding + titleHeight;
 
-  return { "width": `${popoverWidth}px`, "height": `${popoverHeight}px` };
+  return `width: ${popoverWidth}px; height: ${popoverHeight}px`;
+}
+
+function findMatchingEmbeddedSites() {
+  const matchingEmbeddedSites = [];
+  $("iframe").each((idx, iframe) => {
+    const $iframe = $(iframe);
+    const iframeUrl = $iframe.attr("src");
+    let matchingSite = undefined;
+    if (iframeUrl) {
+      matchingSite = watchSiteList.find(site => iframeUrl.includes(site.url));
+    }
+    if (matchingSite) {
+      matchingEmbeddedSites.push({ ...matchingSite, siteIframe: iframe });
+    }
+  });
+  return matchingEmbeddedSites;
+}
+
+function blockMatchingEmbeddedSites() {
+  matchingEmbeddedSites.map(site => $(site.siteIframe))
+    .filter($iframe => $iframe != undefined)
+    .forEach($iframe => {
+      $iframe.remove()
+    });
+  matchingEmbeddedSites = [];
+}
+
+const mutex = new Mutex();
+async function updateSiteTimerState(isTimerActive) {
+  const unlock = await mutex.lock();
+  if (matchingSite || matchingEmbeddedSites.length > 0) {
+    if (isTimerActive === undefined) {
+      isTimerActive = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage({action: 'getTimerState'}, function (response) {
+          if (response) {
+            resolve(!!response.isTimerActive);
+          } else {
+            reject("Failed to get timer state");
+          }
+        });
+      });
+    }
+    if (isTimerActive) {
+      showTimer();
+    } else {
+      hideTimer();
+    }
+  } else {
+    hideTimer();
+  }
+  unlock();
+}
+
+// https://stackoverflow.com/a/51086893/11994724
+function Mutex() {
+  let current = Promise.resolve();
+  this.lock = () => {
+      let _resolve;
+      const p = new Promise(resolve => {
+          _resolve = () => resolve();
+      });
+      // Caller gets a promise that resolves when the current outstanding
+      // lock resolves
+      const rv = current.then(() => _resolve);
+      // Don't allow the next request until the new promise is done
+      current = p;
+      // Return the new promise
+      return rv;
+  };
 }
