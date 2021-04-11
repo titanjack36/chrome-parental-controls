@@ -119,9 +119,11 @@ $(document).ready(function () {
     const idMatch = listBtnRegex.exec(event.target.id);
     if (idMatch) {
       $('[data-toggle="popover"]').popover('hide');
-      const index = +idMatch[1];
+      const index = parseInt(idMatch[1]);
       const siteItem = watchSiteList[index];
-      siteItem.timeVideoOnly = !siteItem.timeVideoOnly;
+      if (siteItem.videoSiteData) {
+        siteItem.videoSiteData.timeVideoOnly = !siteItem.videoSiteData.timeVideoOnly;
+      }
       updateWatchSiteList();
       sendAction('setWatchSiteList', { watchSiteList });
     }
@@ -199,7 +201,7 @@ function createNewWatchSiteItem(url) {
   if (!validURL(url)) {
     return false;
   }
-  watchSiteList.push({ url: url, isVideoSite: isVideoSite(url), timeVideoOnly: false });
+  watchSiteList.push({ url, videoSiteData: getVideoSiteData(url) });
   sendAction('setWatchSiteList', { watchSiteList });
   updateWatchSiteList();
   return true;
@@ -211,7 +213,7 @@ function updateWatchSiteList() {
     <div class="list-item col">
       <div class="url">${encodeHTML(site.url)}</div>
       <div class="actions d-flex">
-        ${site.isVideoSite ?
+        ${site.videoSiteData ?
         `<button type="button" class="video-site-btn" data-toggle="popover">
           <img src="../assets/icons/video-icon.svg" alt="Video Site Options">
         </button>` : ''}
@@ -232,8 +234,10 @@ function updateWatchSiteListPopovers(watchSiteListHtml) {
     const $listItems = $watchSiteList.find('.list-item');
     $listItems.each((index, item) => {
       const site = watchSiteList[index];
-      const action = site.timeVideoOnly ? 'Disable' : 'Enable';
-      const prompt = site.timeVideoOnly ?
+      const videoSiteData = site.videoSiteData;
+      const action = videoSiteData && videoSiteData.timeVideoOnly ?
+        'Disable' : 'Enable';
+      const prompt = videoSiteData && videoSiteData.timeVideoOnly ?
         'Countdown timer will only activate when watching video.' :
         'Enable countdown timer only when watching video?';
       $(item).find('.video-site-btn').popover({
@@ -296,8 +300,12 @@ function resetInputSiteUrl($inputSiteUrl) {
   }
 }
 
-function isVideoSite(url) {
-  return !!videoSites.find(site => url.includes(site.url));
+function getVideoSiteData(url) {
+  const videoSiteData = videoSites.find(site => url.includes(site.url));
+  if (videoSiteData) {
+    videoSiteData.timeVideoOnly = false;
+  }
+  return videoSiteData;
 }
 
 function sendAction(action, payload) {

@@ -1,8 +1,7 @@
 var watchSiteList = [];
-var videoSites = [];
 var matchingSite;
-var matchingEmbeddedSites = [];
-var removedIframes = [];
+var matchingEmbeddedSiteMap = new Map();
+var activeBlockScreens = [];
 var videoSiteDetails;
 var lastRecordedTime;
 
@@ -18,11 +17,11 @@ const timeOptions = [
   { id: "select1_5Hr", timeStr: "1.5 Hr", fullTimeStr: "1.5 Hours", timeInSecs: 5400 },
   { id: "select2Hr", timeStr: "2 Hr", fullTimeStr: "2 Hours", timeInSecs: 7200 }
 ];
-const popoverDimensionsCss = getPopoverDimensionsCss();
+const popoverSizeCss = getPopoverDimensionsCss();
 
 const timerHtml = `
 <div id="${uuid}_mainWrapper">
-  <div id="${uuid}_addTimePopover" class="${uuid}_popover" style="${popoverDimensionsCss}">
+  <div id="${uuid}_addTimePopover" class="${uuid}_popover" style="${popoverSizeCss}">
     <div class="${uuid}_title">Add Time</div>
     <div id="${uuid}_timeOptionGroup">
       ${
@@ -36,7 +35,7 @@ const timerHtml = `
       }
     </div>
   </div>
-  <div id="${uuid}_authPopover" class="${uuid}_popover" style="${popoverDimensionsCss}">
+  <div id="${uuid}_authPopover" class="${uuid}_popover" style="${popoverSizeCss}">
     <div id="${uuid}_authWrapper">
       <div class="${uuid}_title">Enter Password</div>
       <input type="password" id="${uuid}_password">
@@ -55,9 +54,15 @@ const timerHtml = `
 `;
 $("body").append(timerHtml);
 
-const embeddedSiteBlockedHtml = `
-<div id="${uuid}_blockContent">
-  
+const blockScreenHtml = `
+<div class="${uuid}_blockScreen" data-block-screen-mode="hide">
+  <div class="${uuid}_blockMessage">
+    You may not access this content while the timer is at zero.
+  </div>
+  <div class="${uuid}_refreshMessage">
+    Please <button onclick="window.location.reload()">Refresh</button>
+    to continue viewing content.
+  </div>
 </div>
 `;
 
@@ -73,11 +78,8 @@ chrome.runtime.sendMessage({ action: 'getTimerStateAndExtConfig' }, response => 
   if (extConfig.watchSiteList) {
     watchSiteList = extConfig.watchSiteList;
   }
-  if (extConfig.videoSites) {
-    videoSites = extConfig.videoSites;
-  }
   matchingSite = watchSiteList.find(site => location.href.includes(site.url));
-  matchingEmbeddedSites = findMatchingEmbeddedSites();
+  matchingEmbeddedSiteMap = findMatchingEmbeddedSites();
   updateSiteTimerState(timerState.isTimerActive);
 });
 
@@ -88,34 +90,27 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   switch (request.action) {
-    case 'checkIsTabActive':
-      let tabIsActive = false;
-      [matchingSite, ...matchingEmbeddedSites].filter(site => site !== undefined)
-        .forEach(site => {
-          if (site.isVideoSite && site.timeVideoOnly) {
-            if (!videoSiteDetails) {
-              videoSiteDetails = getVideoSiteDetails(site.url);
-            }
-            const selectorFound = !!$(videoSiteDetails.selector).length;
-            tabIsActive = selectorFound === videoSiteDetails.activateOnSelectorFound;
-          } else {
-            tabIsActive = true;
-          }
-        });
-      response = { tabIsActive: tabIsActive };
+    case 'getActiveSitesFromTab':
+      const activeSites = checkIfSiteIsActive(matchingSite) ? [ matchingSite ] : [];
+      for (const [ id, site ] of matchingEmbeddedSiteMap) {
+        if (checkIfSiteIsActive(site)) {
+          activeSites.push(site);
+        }
+      }
+      response = { activeSites };
       break;
 
     case 'setWatchSiteList':
-      matchingEmbeddedSites = findMatchingEmbeddedSites();
       if (request.watchSiteList) {
         watchSiteList = request.watchSiteList;
         matchingSite = watchSiteList.find(site => location.href.includes(site.url));
       }
+      matchingEmbeddedSiteMap = findMatchingEmbeddedSites(true);
       updateSiteTimerState(request.isTimerActive);
       break;
 
     case 'updateSiteTimerState':
-      matchingEmbeddedSites = findMatchingEmbeddedSites();
+      matchingEmbeddedSiteMap = findMatchingEmbeddedSites();
       updateSiteTimerState(request.isTimerActive);
       break;
   }
@@ -132,7 +127,7 @@ port.onMessage.addListener(msg => {
 });
 
 var scanEmbeddedSitesInterval = setInterval(() => {
-  matchingEmbeddedSites = findMatchingEmbeddedSites();
+  matchingEmbeddedSiteMap = findMatchingEmbeddedSites();
   updateSiteTimerState();
 }, 5000);
 
@@ -158,21 +153,20 @@ function updateTimer(timeRemaining) {
   if (timeRemaining === 0) {
     if (matchingSite) {
       sendAction('performRedirect', {});
-    } else if (matchingEmbeddedSites.length > 0) {
+    } else if (matchingEmbeddedSiteMap.size > 0) {
       blockMatchingEmbeddedSites();
     }
+  } else if (activeBlockScreens.length > 0) {
+    clearActiveBlockScreens();
   }
-  if (!lastRecordedTime || Math.floor(timeRemaining) !== Math.floor(lastRecordedTime)) {
+  if (!lastRecordedTime ||
+      Math.floor(timeRemaining) !== Math.floor(lastRecordedTime)) {
     let hrVal = addPrefixZero(Math.floor(timeRemaining / 3600));
     let minVal = addPrefixZero(Math.floor(timeRemaining % 3600 / 60));
     let secVal = addPrefixZero(Math.floor(timeRemaining % 60));
     $timerTime.text(hrVal + "h " + minVal + "m " + secVal + "s");
   }
   lastRecordedTime = timeRemaining;
-}
-
-function getVideoSiteDetails(url) {
-  return videoSites.find(site => url.includes(site.url));
 }
 
 function addPrefixZero(num) {
@@ -267,18 +261,34 @@ function confirmAddTime() {
     return;
   }
   pendingPasswordValidation = true;
-  chrome.runtime.sendMessage({ action: 'validatePassword', password: $passwordField.val() },
-  response => {
-    if (response && response.isPasswordValid) {
-      sendAction('addTime', { time: secondsToAdd });
-      hidePopovers();
+  chrome.runtime.sendMessage(
+    { action: 'validatePassword', password: $passwordField.val() },
+    response => {
+      if (response && response.isPasswordValid) {
+        sendAction('addTime', { time: secondsToAdd });
+        hidePopovers();
+      }
+      pendingPasswordValidation = false;
     }
-    pendingPasswordValidation = false;
-  });
+  );
 }
 
 function sendAction(action, payload) {
   chrome.runtime.sendMessage({action, ...payload}, function (response) { });
+}
+
+function checkIfSiteIsActive(siteData) {
+  if (!siteData) {
+    return false;
+  }
+  console.log(siteData);
+  const videoSiteData = siteData.videoSiteData;
+  if (videoSiteData && videoSiteData.timeVideoOnly) {
+    const selectorFound = !!$(videoSiteData.selector).length;
+    return selectorFound === videoSiteData.activateOnSelectorFound;
+  } else {
+    return true;
+  }
 }
 
 function getPopoverDimensionsCss() {
@@ -302,35 +312,61 @@ function getPopoverDimensionsCss() {
   return `width: ${popoverWidth}px; height: ${popoverHeight}px`;
 }
 
-function findMatchingEmbeddedSites() {
-  const matchingEmbeddedSites = [];
+var embeddedSiteIdCounter = 0;
+function findMatchingEmbeddedSites(forceUpdate = false) {
+  const matchingSiteMap = new Map();
   $("iframe").each((idx, iframe) => {
     const $iframe = $(iframe);
+    const existingId = parseInt($iframe.attr('data-embeddedSiteId'));
+    if (!forceUpdate && existingId !== undefined && 
+        this.matchingEmbeddedSiteMap.has(existingId)) {
+      matchingSiteMap.set(existingId, this.matchingEmbeddedSiteMap.get(existingId));
+      return;
+    }
+    let matchingSite;
     const iframeUrl = $iframe.attr("src");
-    let matchingSite = undefined;
     if (iframeUrl) {
       matchingSite = watchSiteList.find(site => iframeUrl.includes(site.url));
     }
     if (matchingSite) {
-      matchingEmbeddedSites.push({ ...matchingSite, siteIframe: iframe });
+      $iframe.attr('data-embeddedSiteId', embeddedSiteIdCounter.toString());
+      const $iframeParent = $iframe.parent();
+      $iframeParent.find(`.${uuid}_blockScreen`).remove();
+      $iframeParent.append(blockScreenHtml);
+      $blockScreen = $iframeParent.find(`.${uuid}_blockScreen`);
+      $blockScreen.css({ width: $iframe.width(), height: $iframe.height() });
+      matchingSiteMap.set(embeddedSiteIdCounter,
+        { ...matchingSite, $iframe, $blockScreen });
+      embeddedSiteIdCounter++;
     }
   });
-  return matchingEmbeddedSites;
+  return matchingSiteMap;
 }
 
 function blockMatchingEmbeddedSites() {
-  matchingEmbeddedSites.map(site => $(site.siteIframe))
-    .filter($iframe => $iframe != undefined)
-    .forEach($iframe => {
-      $iframe.remove()
-    });
-  matchingEmbeddedSites = [];
+  matchingEmbeddedSiteMap.forEach((siteData) => {
+    try {
+      siteData.$iframe.remove();
+      siteData.$blockScreen.attr("data-block-screen-mode", "block");
+      activeBlockScreens.push($blockScreen);
+    } catch (err) {
+      console.error(err);
+    }
+  });
+  matchingEmbeddedSiteMap = new Map();
+}
+
+function clearActiveBlockScreens() {
+  activeBlockScreens.forEach($blockScreen => {
+    $blockScreen.attr("data-block-screen-mode", "refresh");
+  });
+  activeBlockScreens = [];
 }
 
 const mutex = new Mutex();
 async function updateSiteTimerState(isTimerActive) {
   const unlock = await mutex.lock();
-  if (matchingSite || matchingEmbeddedSites.length > 0) {
+  if (matchingSite || matchingEmbeddedSiteMap.size || activeBlockScreens.length) {
     if (isTimerActive === undefined) {
       isTimerActive = await new Promise((resolve, reject) => {
         chrome.runtime.sendMessage({action: 'getTimerState'}, function (response) {

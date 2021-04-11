@@ -2,6 +2,12 @@ var isAuthenticated = false;
 var lastRecordedTime;
 var currentTime;
 var savedPassword;
+var activeSiteUrls = new Set();
+var lastLogTime = new Date();
+var savedSites = new Map();
+
+const serverEndpoint = "http://localhost:3000/api/v1/timelog";
+
 var timerState = {
   isTimerActive: true,
   isTimerRunning: true,
@@ -19,8 +25,6 @@ var extConfig = {
     { url: "tvokids.com", selector: '.vjs-playing', activateOnSelectorFound: true }
   ]
 };
-
-var savedSites = new Map();
 
 chrome.storage.local.get(['extConfig', 'timerState', 'lastRecordedTime', 'password'], result => {
   if (!result) {
@@ -156,24 +160,6 @@ chrome.runtime.onConnect.addListener(port => {
   });
 });
 
-/*chrome.tabs.onRemoved.addListener(function (tabId, removed) {
-  checkAllTabs();
-});
-
-function checkAllTabs() {
-  chrome.tabs.getAllInWindow(null, function (tabs) {
-    let matchingSite = undefined;
-    tabs.forEach(tab => {
-      matchingSite = monitorSiteList.find(siteUrl =>
-        location.href.includes(siteUrl)
-      );
-    });
-    if (!matchingSite) {
-      isTimerRunning = false;
-    }
-  });
-}*/
-
 var dateCheckInterval = setInterval(() => {
   if (!currentTime) {
     return;
@@ -192,9 +178,7 @@ var dateCheckInterval = setInterval(() => {
 }, 1000);
 
 var monitorInterval = setInterval(() => {
-  chrome.tabs.query({}, tabs => {
-    checkForActiveTabs(tabs);
-  });
+  checkForActiveTabs();
 }, 1000);
 
 var timerSyncInterval = setInterval(() => {
@@ -213,55 +197,86 @@ var timerSyncInterval = setInterval(() => {
   }
 }, 100);
 
-var timerSaveInterval = setInterval(() => saveTimerState(), 50000);
+var timerSaveInterval = setInterval(() => saveTimerState(), 10000);
 
-async function checkForActiveTabs(tabs) {
+var logActiveSitesInterval = setInterval(async () => {
+  const newTime = new Date();
+  try {
+    if (activeSiteUrls.size > 0) {
+      await fetch(`${serverEndpoint}/log`, {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          timeStart: lastLogTime.toISOString(),
+          timeEnd: newTime.toISOString(),
+          siteUrls: Array.from(activeSiteUrls),
+          extensionId: chrome.runtime.id
+        })
+      });
+    }
+    activeSiteUrls = new Set();
+    lastLogTime = newTime;
+  } catch (err) {
+    console.error(err);
+  }
+}, 10000);
+
+async function checkForActiveTabs() {
   if (!extConfig.useWatchList) {
     timerState.isTimerRunning = true;
     return;
   }
-  let hasActiveTabs = false;
-  for (const tab of tabs) {
-    if (tab && tab.id !== undefined) {
-      hasActiveTabs = hasActiveTabs || await new Promise(resolve => {
-        chrome.tabs.sendMessage(tab.id, { action: 'checkIsTabActive' },
-          response => {
-            resolve(!!(response && response.tabIsActive));
-            var lastError = chrome.runtime.lastError;
-            if (lastError) {
-              return;
-            }
-          });
-      });
+  let activeSiteUrls = new Set();
+  for (const tab of await getAllTabs()) {
+    const response = await sendActionToTab(tab, 'getActiveSitesFromTab');
+    if (response && response.activeSites) {
+      response.activeSites.forEach(site => activeSiteUrls.add(site.url));
     }
   }
-  timerState.isTimerRunning = hasActiveTabs;
+  for (const url of activeSiteUrls) {
+    this.activeSiteUrls.add(url);
+  }
+  timerState.isTimerRunning = activeSiteUrls.size > 0;
 }
 
 function saveTimerState() {
   chrome.storage.local.set({ 
-    timerState: { ...timerState, hasActiveTabs: false }
-  }, () => { });
+    timerState: { ...timerState, hasActiveTabs: false }}, () => { });
 }
 
 function saveExtConfig() {
   chrome.storage.local.set({
-    extConfig: { ...extConfig, videoSites: [] }
-  }, () => { });
+    extConfig: { ...extConfig, videoSites: [] }}, () => { });
+}
+
+async function getAllTabs() {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.query({}, tabs => {
+      resolve(tabs.filter(tab => tab.id && tab.url !== undefined));
+    });
+  });
+}
+
+async function sendActionToTab(tab, action, payload) {
+  return new Promise((resolve, reject) => {
+    chrome.tabs.sendMessage(tab.id, { action, ...payload },
+      response => {
+        resolve(response);
+        var lastError = chrome.runtime.lastError;
+        if (lastError) {
+          return;
+        }
+      });
+  });
 }
 
 function sendActionToAllTabs(action, payload) {
   chrome.tabs.query({}, tabs => {
-    tabs.forEach(tab => {
-      chrome.tabs.sendMessage(tab.id, { action, ...payload },
-        response => {
-          var lastError = chrome.runtime.lastError;
-          if (lastError) {
-            return;
-          }
-        }
-      );
-    });
+    tabs.filter(tab => tab.id && tab.url !== undefined)
+      .forEach(tab => sendActionToTab(tab, action, payload));
   });
 }
 
