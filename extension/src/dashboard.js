@@ -15,13 +15,18 @@ chrome.runtime.sendMessage({ action: 'isLoggedIn' }, function (response) {
     });
   }
 });
-chrome.runtime.sendMessage({ action: 'getTimerState' }, async function (response) {
-  if (response && response.timeRemaining != null) {
-    await waitDocumentReady();
-    updateTimer(response.timeRemaining);
-    toggleTimer(response.isTimerActive);
-    setTimeout(() => $("#toggleTimer").prop("checked", response.isTimerActive), 100);
+chrome.runtime.sendMessage({ action: 'getTimerStateAndExtConfig' }, async function (response) {
+  if (!response || !response.timerState || !response.extConfig) {
+    return;
   }
+  await waitDocumentReady();
+  const { timerState, extConfig } = response;
+  updateTimer(timerState.timeRemaining);
+  toggleTimer(timerState.isTimerActive);
+  $("#toggleTimer").prop("checked", timerState.isTimerActive);
+  $("#enableAutoReset").prop("checked", extConfig.useAutoReset);
+  $("#enableWatchList").prop("checked", extConfig.useWatchList);
+  $("#enableLogging").prop("checked", extConfig.useLogging);
 });
 chrome.runtime.sendMessage({ action: 'getExtConfig' }, async function (response) {
   if (response) {
@@ -74,7 +79,11 @@ $(document).ready(function () {
         return;
       }
       focusedTimerField = this;
-      setTimeout(function () { focusedTimerField.select(); }, 100);
+      setTimeout(() => {
+        if (focusedTimerField) {
+          focusedTimerField.select();
+        }
+      }, 100);
     });
     $timerField.on('input blur', function() {
       focusedTimerField = null;
@@ -87,6 +96,10 @@ $(document).ready(function () {
 
   $("#enableWatchList").change(function () {
     sendAction('setUseWatchList', { useWatchList: this.checked });
+  });
+
+  $("#enableLogging").change(function () {
+    sendAction('setUseLogging', { useLogging: this.checked });
   });
 
   $("#changePassword").click(function () {

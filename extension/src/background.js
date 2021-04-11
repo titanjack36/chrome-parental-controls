@@ -18,6 +18,7 @@ var extConfig = {
   useAutoReset: false,
   useWatchList: false,
   useBreaks: false,
+  useLogging: false,
   watchSiteList: [],
   videoSites: [
     { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true },
@@ -102,12 +103,17 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'setUseAutoReset':
       extConfig.useAutoReset = !!request.useAutoReset;
-      saveTimerState();
+      saveExtConfig();
       break;
 
     case 'setUseWatchList':
       extConfig.useWatchList = !!request.useWatchList;
-      saveTimerState();
+      saveExtConfig();
+      break;
+
+    case 'setUseLogging':
+      extConfig.useLogging = !!request.useLogging;
+      saveExtConfig();
       break;
 
     case 'performRedirect':
@@ -202,7 +208,7 @@ var timerSaveInterval = setInterval(() => saveTimerState(), 10000);
 var logActiveSitesInterval = setInterval(async () => {
   const newTime = new Date();
   try {
-    if (activeSiteUrls.size > 0) {
+    if (extConfig.useLogging && activeSiteUrls.size > 0) {
       await fetch(`${serverEndpoint}/log`, {
         method: 'POST',
         headers: {
