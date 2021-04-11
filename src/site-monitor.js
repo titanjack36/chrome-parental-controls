@@ -281,7 +281,6 @@ function checkIfSiteIsActive(siteData) {
   if (!siteData) {
     return false;
   }
-  console.log(siteData);
   const videoSiteData = siteData.videoSiteData;
   if (videoSiteData && videoSiteData.timeVideoOnly) {
     const selectorFound = !!$(videoSiteData.selector).length;
