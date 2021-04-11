@@ -1,8 +1,8 @@
-const backgroundImages = [
-  "background1.jpg",
-  "background2.jpg",
-  "background3.jpg",
-  "background4.jpg"
+const backgroundImageUrls = [
+  "https://i.imgur.com/XtEjGdh.jpg",
+  "https://i.imgur.com/tLrGv4d.jpg",
+  "https://i.imgur.com/eYVswqu.jpg",
+  "https://i.imgur.com/J8KvzaZ.jpg"
 ];
 const timeOptions = [
   { id: "select10Min", timeStr: "10 Min", fullTimeStr: "10 Minutes", timeInSecs: 600 },
@@ -17,7 +17,7 @@ const timeOptions = [
 ];
 
 document.addEventListener("DOMContentLoaded", function (event) {
-  let randIndex = Math.floor(Math.random() * backgroundImages.length);
+  let randIndex = Math.floor(Math.random() * backgroundImageUrls.length);
   let body = document.getElementsByTagName('body')[0];
   let splashScreen = document.getElementById('splashScreen');
   var img = new Image();
@@ -25,7 +25,7 @@ document.addEventListener("DOMContentLoaded", function (event) {
     splashScreen.classList.add('fadeout');
     body.style.backgroundImage = `url(${this.src})`;
   }
-  img.src = `../assets/${backgroundImages[randIndex]}`;
+  img.src = backgroundImageUrls[randIndex];
 });
 
 var port = chrome.runtime.connect({ name: "timer" });
