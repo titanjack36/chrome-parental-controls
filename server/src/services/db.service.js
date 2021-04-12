@@ -26,7 +26,7 @@ class DbService {
   }
 
   toSqlTimeFormat = (datetime) => {
-    return format(datetime, 'yyyy-MM-dd hh:mm:ss');
+    return format(datetime, 'yyyy-MM-dd HH:mm:ss');
   }
 }
 
