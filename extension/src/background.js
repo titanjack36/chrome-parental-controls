@@ -2,9 +2,9 @@ var isAuthenticated = false;
 var lastRecordedTime;
 var currentTime;
 var savedPassword;
-var activeSiteUrls = new Set();
+var activeSiteUrlSet = new Set();
 var lastLogTime = new Date();
-var savedSites = new Map();
+var blockedTabIdMap = new Map();
 
 const serverEndpoint = "http://localhost:3000/api/v1/timelog";
 
@@ -118,8 +118,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 
     case 'performRedirect':
       chrome.tabs.get(sender.tab.id, tab => {
-        if (!savedSites.has(sender.tab.id)) {
-          savedSites.set(sender.tab.id, tab.url);
+        if (!blockedTabIdMap.has(sender.tab.id)) {
+          blockedTabIdMap.set(sender.tab.id, tab.url);
         }
         chrome.tabs.update(sender.tab.id,
           { url: chrome.extension.getURL('src/redirect-page.html') });
@@ -127,9 +127,9 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       break;
 
     case 'restorePage':
-      const matchingSiteUrl = savedSites.get(sender.tab.id);
+      const matchingSiteUrl = blockedTabIdMap.get(sender.tab.id);
       if (matchingSiteUrl) {
-        savedSites.delete(sender.tab.id);
+        blockedTabIdMap.delete(sender.tab.id);
         chrome.tabs.update(sender.tab.id, { url: matchingSiteUrl });
       }
       break;
@@ -183,8 +183,13 @@ var dateCheckInterval = setInterval(() => {
     () => { });
 }, 1000);
 
-var monitorInterval = setInterval(() => {
-  checkForActiveTabs();
+var monitorInterval = setInterval(async () => {
+  let activeSiteUrls = [];
+  if (extConfig.useWatchList || extConfig.useLogging) {
+    activeSiteUrls = await getActiveSiteUrls();
+    activeSiteUrls.forEach(url => activeSiteUrlSet.add(url));
+  }
+  timerState.isTimerRunning = !extConfig.useWatchList || activeSiteUrls.length > 0;
 }, 1000);
 
 var timerSyncInterval = setInterval(() => {
@@ -208,7 +213,7 @@ var timerSaveInterval = setInterval(() => saveTimerState(), 10000);
 var logActiveSitesInterval = setInterval(async () => {
   const newTime = new Date();
   try {
-    if (extConfig.useLogging && activeSiteUrls.size > 0) {
+    if (extConfig.useLogging && activeSiteUrlSet.size > 0) {
       await fetch(`${serverEndpoint}/log`, {
         method: 'POST',
         headers: {
@@ -218,34 +223,27 @@ var logActiveSitesInterval = setInterval(async () => {
         body: JSON.stringify({
           timeStart: lastLogTime.toISOString(),
           timeEnd: newTime.toISOString(),
-          siteUrls: Array.from(activeSiteUrls),
+          siteUrls: Array.from(activeSiteUrlSet),
           extensionId: chrome.runtime.id
         })
       });
     }
-    activeSiteUrls = new Set();
+    activeSiteUrlSet = new Set();
     lastLogTime = newTime;
   } catch (err) {
     console.error(err);
   }
 }, 10000);
 
-async function checkForActiveTabs() {
-  if (!extConfig.useWatchList) {
-    timerState.isTimerRunning = true;
-    return;
-  }
-  let activeSiteUrls = new Set();
+async function getActiveSiteUrls() {
+  const activeSiteUrls = [];
   for (const tab of await getAllTabs()) {
     const response = await sendActionToTab(tab, 'getActiveSitesFromTab');
     if (response && response.activeSites) {
-      response.activeSites.forEach(site => activeSiteUrls.add(site.url));
+      response.activeSites.forEach(site => activeSiteUrls.push(site.url));
     }
   }
-  for (const url of activeSiteUrls) {
-    this.activeSiteUrls.add(url);
-  }
-  timerState.isTimerRunning = activeSiteUrls.size > 0;
+  return activeSiteUrls;
 }
 
 function saveTimerState() {
