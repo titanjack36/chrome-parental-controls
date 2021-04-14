@@ -52,15 +52,19 @@
       <hr />
       <div class="group">
         <div class="row align-items-center">
-          <div class="col"><b>Watch List</b></div>
-          <input class="col toggle" type="checkbox" id="enableWatchList" /><label class="toggle"
-            for="enableWatchList">Toggle</label>
+          <div class="col"><b>Block List</b></div>
+          <input class="col toggle" type="checkbox" id="enableBlockList" /><label class="toggle"
+            for="enableBlockList">Toggle</label>
         </div>
-        <div id="watchSiteList" class="row p-3">
+        <div id="blockSiteList" class="row p-3">
         </div>
-        <div class="d-flex justify-content-center">
-          <button type="button" class="btn btn-primary center-button" data-toggle="modal" data-target="#addSiteModal">
-            Add Site</button>
+        <div class="d-flex">
+          <div class="flex-grow-1 mr-2">
+            <input type="text" class="form-control" id="blockSiteUrlField" placeholder="www.example.com" />
+            <small id="blockSiteUrlFieldHelp" class="text-danger">
+            </small>
+          </div>
+          <button type="submit" id="addBlockSiteBtn" class="btn btn-primary align-self-start">Add Site</button>
         </div>
       </div>
       <hr />
@@ -70,6 +74,16 @@
           <input class="col toggle" type="checkbox" id="enableLogging" /><label class="toggle"
             for="enableLogging">Toggle</label>
         </div>
+        <div id="logSiteList" class="row p-3">
+        </div>
+        <div class="d-flex">
+          <div class="flex-grow-1 mr-2">
+            <input type="text" class="form-control" id="logSiteUrlField" placeholder="www.example.com" />
+            <small id="logSiteUrlFieldHelp" class="text-danger">
+            </small>
+          </div>
+          <button type="submit" id="addLogSiteBtn" class="btn btn-primary align-self-start">Add Site</button>
+        </div>
       </div>
       <hr />
       <div class="group">
@@ -77,29 +91,6 @@
         <div class="d-flex justify-content-center">
           <button type="button" id="changePassword" class="btn btn-outline-secondary center-button">
             Change Password</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="modal fade" id="addSiteModal" tabindex="-1" role="dialog" aria-labelledby="addSiteModalTitle"
-    aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered" role="document">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title" id="addSiteModalLongTitle">Enter Site URL</h5>
-          <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <input type="text" class="form-control" id="inputSiteUrl" placeholder="www.example.com" />
-          <small id="inputSiteUrlHelp" class="text-danger">
-          </small>
-        </div>
-        <div class="modal-footer">
-          <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-          <button type="submit" id="addSiteBtn" class="btn btn-primary">Add Site</button>
         </div>
       </div>
     </div>

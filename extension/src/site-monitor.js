@@ -1,4 +1,4 @@
-var watchSiteList = [];
+var blockSiteList = [];
 var matchingSite;
 var matchingEmbeddedSiteMap = new Map();
 var activeBlockScreens = [];
@@ -75,10 +75,10 @@ chrome.runtime.sendMessage({ action: 'getTimerStateAndExtConfig' }, response => 
     return;
   }
   const { timerState, extConfig } = response;
-  if (extConfig.watchSiteList) {
-    watchSiteList = extConfig.watchSiteList;
+  if (extConfig.blockSiteList) {
+    blockSiteList = extConfig.blockSiteList;
   }
-  matchingSite = watchSiteList.find(site => location.href.includes(site.url));
+  matchingSite = blockSiteList.find(site => location.href.includes(site.url));
   matchingEmbeddedSiteMap = findMatchingEmbeddedSites();
   updateSiteTimerState(timerState.isTimerActive);
 });
@@ -100,10 +100,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       response = { activeSites };
       break;
 
-    case 'setWatchSiteList':
-      if (request.watchSiteList) {
-        watchSiteList = request.watchSiteList;
-        matchingSite = watchSiteList.find(site => location.href.includes(site.url));
+    case 'setBlockSiteList':
+      if (request.blockSiteList) {
+        blockSiteList = request.blockSiteList;
+        matchingSite = blockSiteList.find(site => location.href.includes(site.url));
       }
       matchingEmbeddedSiteMap = findMatchingEmbeddedSites(true);
       updateSiteTimerState(request.isTimerActive);
@@ -325,7 +325,7 @@ function findMatchingEmbeddedSites(forceUpdate = false) {
     let matchingSite;
     const iframeUrl = $iframe.attr("src");
     if (iframeUrl) {
-      matchingSite = watchSiteList.find(site => iframeUrl.includes(site.url));
+      matchingSite = blockSiteList.find(site => iframeUrl.includes(site.url));
     }
     if (matchingSite) {
       $iframe.attr('data-embeddedSiteId', embeddedSiteIdCounter.toString());

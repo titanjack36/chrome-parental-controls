@@ -16,10 +16,10 @@ var timerState = {
 };
 var extConfig = {
   useAutoReset: false,
-  useWatchList: false,
+  useBlockList: false,
   useBreaks: false,
   useLogging: false,
-  watchSiteList: [],
+  blockSiteList: [],
   videoSites: [
     { url: "youtube.com", selector: '.playing-mode', activateOnSelectorFound: true },
     { url: "tfo.org", selector: '.jw-state-playing', activateOnSelectorFound: true },
@@ -36,7 +36,7 @@ chrome.storage.local.get(['extConfig', 'timerState', 'lastRecordedTime', 'passwo
   }
   if (result.timerState) {
     timerState = result.timerState;
-    timerState.isTimerRunning = !extConfig.useWatchList;
+    timerState.isTimerRunning = !extConfig.useBlockList;
   }
   if (result.password) {
     savedPassword = result.password;
@@ -44,8 +44,8 @@ chrome.storage.local.get(['extConfig', 'timerState', 'lastRecordedTime', 'passwo
   if (result.lastRecordedTime) {
     lastRecordedTime = new Date(JSON.parse(result.lastRecordedTime));
   }
-  // If not using watch list, then include time elapsed when browser was closed
-  currentTime = !extConfig.useWatchList && lastRecordedTime ? lastRecordedTime : new Date();
+  // If not using block list, then include time elapsed when browser was closed
+  currentTime = !extConfig.useBlockList && lastRecordedTime ? lastRecordedTime : new Date();
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -106,8 +106,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       saveExtConfig();
       break;
 
-    case 'setUseWatchList':
-      extConfig.useWatchList = !!request.useWatchList;
+    case 'setUseBlockList':
+      extConfig.useBlockList = !!request.useBlockList;
       saveExtConfig();
       break;
 
@@ -134,12 +134,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       break;
 
-    case 'setWatchSiteList':
-      if (request.watchSiteList) {
-        extConfig.watchSiteList = request.watchSiteList;
+    case 'setBlockSiteList':
+      if (request.blockSiteList) {
+        extConfig.blockSiteList = request.blockSiteList;
         saveExtConfig();
-        sendActionToAllTabs('setWatchSiteList',
-          { watchSiteList: extConfig.watchSiteList, isTimerActive: timerState.isTimerActive });
+        sendActionToAllTabs('setBlockSiteList',
+          { blockSiteList: extConfig.blockSiteList, isTimerActive: timerState.isTimerActive });
       }
       break;
 
@@ -185,11 +185,11 @@ var dateCheckInterval = setInterval(() => {
 
 var monitorInterval = setInterval(async () => {
   let activeSiteUrls = [];
-  if (extConfig.useWatchList || extConfig.useLogging) {
+  if (extConfig.useBlockList || extConfig.useLogging) {
     activeSiteUrls = await getActiveSiteUrls();
     activeSiteUrls.forEach(url => activeSiteUrlSet.add(url));
   }
-  timerState.isTimerRunning = !extConfig.useWatchList || activeSiteUrls.length > 0;
+  timerState.isTimerRunning = !extConfig.useBlockList || activeSiteUrls.length > 0;
 }, 1000);
 
 var timerSyncInterval = setInterval(() => {

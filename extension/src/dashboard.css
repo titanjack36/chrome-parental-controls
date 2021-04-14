@@ -54,13 +54,13 @@ h1 {
   margin: 15px;
 }
 
-/* Watch Site List Styles */
+/* Block Site List Styles */
 
-#watchSiteList {
+#blockSiteList {
   display: block;
 }
 
-#watchSiteList .list-item {
+#blockSiteList .list-item {
   background-color: #fff;
   color: #505050;
   height: 50px;

@@ -3,7 +3,7 @@ var timerFields;
 var previousSetTime;
 var wasTimerEdited = false;
 
-var watchSiteList = [];
+var blockSiteList = [];
 var videoSites = [];
 
 const listBtnRegex = /[A-Za-z]+([0-9])/;
@@ -25,19 +25,19 @@ chrome.runtime.sendMessage({ action: 'getTimerStateAndExtConfig' }, async functi
   toggleTimer(timerState.isTimerActive);
   $("#toggleTimer").prop("checked", timerState.isTimerActive);
   $("#enableAutoReset").prop("checked", extConfig.useAutoReset);
-  $("#enableWatchList").prop("checked", extConfig.useWatchList);
+  $("#enableBlockList").prop("checked", extConfig.useBlockList);
   $("#enableLogging").prop("checked", extConfig.useLogging);
 });
 chrome.runtime.sendMessage({ action: 'getExtConfig' }, async function (response) {
   if (response) {
-    if (response.watchSiteList) {
-      watchSiteList = response.watchSiteList;
+    if (response.blockSiteList) {
+      blockSiteList = response.blockSiteList;
     }
     if (response.videoSites) {
       videoSites = response.videoSites;
     }
     await waitDocumentReady();
-    updateWatchSiteList();
+    updateBlockSiteList();
   }
 });
 
@@ -66,7 +66,7 @@ $(document).ready(function () {
   });
 
   $("#enableAutoReset").change(function () {
-    sendAction('setUseWatchList', { useAutoReset: this.checked });
+    sendAction('setUseBlockList', { useAutoReset: this.checked });
   });
 
   for (let prop in timerFields) {
@@ -94,38 +94,25 @@ $(document).ready(function () {
     resetTimer();
   });
 
-  $("#enableWatchList").change(function () {
-    sendAction('setUseWatchList', { useWatchList: this.checked });
+  $("#enableBlockList").change(function () {
+    sendAction('setUseBlockList', { useBlockList: this.checked });
   });
 
-  $("#enableLogging").change(function () {
-    sendAction('setUseLogging', { useLogging: this.checked });
-  });
-
-  $("#changePassword").click(function () {
-    chrome.runtime.sendMessage({ action: 'login' }, function (response) { });
-    chrome.tabs.getCurrent(function (tab) {
-      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/auth-reset.html') });
-    });
-  });
-
-  $("#addSiteBtn").click(function () {
-    const $inputSiteUrl = $("#inputSiteUrl");
-    if ($inputSiteUrl) {
+  $("#addBlockSiteBtn").click(function () {
+    const $blockSiteUrlField = $("#blockSiteUrlField");
+    if ($blockSiteUrlField) {
       const isAddSuccessful =
-        createNewWatchSiteItem($inputSiteUrl.val());
+        createNewBlockSiteItem($blockSiteUrlField.val());
       if (isAddSuccessful) {
-        $("#addSiteModal").modal('hide');
-        resetInputSiteUrl($inputSiteUrl);
+        resetblockSiteUrlField($blockSiteUrlField);
       } else {
-        invalidateInputSiteUrl($inputSiteUrl);
+        invalidateblockSiteUrlField($blockSiteUrlField);
       }
     }
   });
 
-  $('#addSiteModal').on('hidden.bs.modal', function () {
-    const $inputSiteUrl = $("#inputSiteUrl");
-    resetInputSiteUrl($inputSiteUrl);
+  $("#enableLogging").change(function () {
+    sendAction('setUseLogging', { useLogging: this.checked });
   });
 
   $('body').on('click', '.video-only-site-btn', event => {
@@ -133,12 +120,12 @@ $(document).ready(function () {
     if (idMatch) {
       $('[data-toggle="popover"]').popover('hide');
       const index = parseInt(idMatch[1]);
-      const siteItem = watchSiteList[index];
+      const siteItem = blockSiteList[index];
       if (siteItem.videoSiteData) {
         siteItem.videoSiteData.timeVideoOnly = !siteItem.videoSiteData.timeVideoOnly;
       }
-      updateWatchSiteList();
-      sendAction('setWatchSiteList', { watchSiteList });
+      updateBlockSiteList();
+      sendAction('setBlockSiteList', { blockSiteList });
     }
   });
 
@@ -147,9 +134,9 @@ $(document).ready(function () {
     if (idMatch) {
       $('[data-toggle="popover"]').popover('hide');
       const index = +idMatch[1];
-      watchSiteList.splice(index, 1);
-      updateWatchSiteList();
-      sendAction('setWatchSiteList', { watchSiteList });
+      blockSiteList.splice(index, 1);
+      updateBlockSiteList();
+      sendAction('setBlockSiteList', { blockSiteList });
     }
   });
 
@@ -159,6 +146,13 @@ $(document).ready(function () {
       $(e.target).parents('.popover').length === 0) {
       $('[data-toggle="popover"]').popover('hide');
     }
+  });
+
+  $("#changePassword").click(function () {
+    chrome.runtime.sendMessage({ action: 'login' }, function (response) { });
+    chrome.tabs.getCurrent(function (tab) {
+      chrome.tabs.update(tab.id, { url: chrome.extension.getURL('src/auth-reset.html') });
+    });
   });
 });
 
@@ -210,18 +204,18 @@ function addPrefixZero(num) {
   return ("0" + num).slice(-2);
 }
 
-function createNewWatchSiteItem(url) {
+function createNewBlockSiteItem(url) {
   if (!validURL(url)) {
     return false;
   }
-  watchSiteList.push({ url, videoSiteData: getVideoSiteData(url) });
-  sendAction('setWatchSiteList', { watchSiteList });
-  updateWatchSiteList();
+  blockSiteList.push({ url, videoSiteData: getVideoSiteData(url) });
+  sendAction('setBlockSiteList', { blockSiteList });
+  updateBlockSiteList();
   return true;
 }
 
-function updateWatchSiteList() {
-  const watchSiteListHtml = watchSiteList.reduce((listHtml, site) => {
+function updateBlockSiteList() {
+  const blockSiteListHtml = blockSiteList.reduce((listHtml, site) => {
     return (listHtml + `
     <div class="list-item col">
       <div class="url">${encodeHTML(site.url)}</div>
@@ -236,17 +230,17 @@ function updateWatchSiteList() {
       </div>
     </div>`);
   }, '');
-  updateWatchSiteListPopovers(watchSiteListHtml);
+  updateBlockSiteListPopovers(blockSiteListHtml);
 }
 
-function updateWatchSiteListPopovers(watchSiteListHtml) {
-  const $watchSiteList = $("#watchSiteList");
-  if ($watchSiteList) {
-    $watchSiteList.html(watchSiteListHtml);
+function updateBlockSiteListPopovers(blockSiteListHtml) {
+  const $blockSiteList = $("#blockSiteList");
+  if ($blockSiteList) {
+    $blockSiteList.html(blockSiteListHtml);
 
-    const $listItems = $watchSiteList.find('.list-item');
+    const $listItems = $blockSiteList.find('.list-item');
     $listItems.each((index, item) => {
-      const site = watchSiteList[index];
+      const site = blockSiteList[index];
       const videoSiteData = site.videoSiteData;
       const action = videoSiteData && videoSiteData.timeVideoOnly ?
         'Disable' : 'Enable';
@@ -296,20 +290,20 @@ function validURL(str) {
   return !!pattern.test(str);
 }
 
-function invalidateInputSiteUrl($inputSiteUrl) {
-  const $inputSiteUrlHelp = $("#inputSiteUrlHelp");
-  if ($inputSiteUrl && $inputSiteUrlHelp) {
-    $inputSiteUrl.addClass("is-invalid");
-    $inputSiteUrlHelp.text("URL is invalid.");
+function invalidateblockSiteUrlField($blockSiteUrlField) {
+  const $blockSiteUrlFieldHelp = $("#blockSiteUrlFieldHelp");
+  if ($blockSiteUrlField && $blockSiteUrlFieldHelp) {
+    $blockSiteUrlField.addClass("is-invalid");
+    $blockSiteUrlFieldHelp.text("URL is invalid.");
   }
 }
 
-function resetInputSiteUrl($inputSiteUrl) {
-  const $inputSiteUrlHelp = $("#inputSiteUrlHelp");
-  if ($inputSiteUrl && $inputSiteUrlHelp) {
-    $inputSiteUrl.val("");
-    $inputSiteUrl.removeClass("is-invalid");
-    $inputSiteUrlHelp.text("");
+function resetblockSiteUrlField($blockSiteUrlField) {
+  const $blockSiteUrlFieldHelp = $("#blockSiteUrlFieldHelp");
+  if ($blockSiteUrlField && $blockSiteUrlFieldHelp) {
+    $blockSiteUrlField.val("");
+    $blockSiteUrlField.removeClass("is-invalid");
+    $blockSiteUrlFieldHelp.text("");
   }
 }
 
