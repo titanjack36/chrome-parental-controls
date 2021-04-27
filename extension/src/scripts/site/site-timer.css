@@ -93,8 +93,14 @@
   justify-content: space-between;
 }
 
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_passwordWrapper'] {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0 20px;
+}
+
 [id='215b0307-a5ed-46ea-85db-d4880aea34a2_password'] {
-  margin: 0 20px;
   border: none;
   border-radius: 5px;
   font-size: 18px;
@@ -102,6 +108,15 @@
   background: white;
   color: black;
   padding: 2px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+[id='215b0307-a5ed-46ea-85db-d4880aea34a2_errorMsg'] {
+  display: block;
+  font-size: 14px;
+  color: #d61919;
+  margin-top: 5px;
 }
 
 [class='215b0307-a5ed-46ea-85db-d4880aea34a2_buttonRow'] {

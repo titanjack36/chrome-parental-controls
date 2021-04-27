@@ -129,6 +129,7 @@ const $addTimePopover = $(`#${uuid}_addTimePopover`);
 const $authPopover = $(`#${uuid}_authPopover`);
 const $addTimePrompt = $(`#${uuid}_prompt`);
 const $passwordField = $(`#${uuid}_password`);
+const $errorMsg = $(`#${uuid}_errorMsg`);
 
 $(document).click(function (event) {
   if (!(isAddTimePopoverShown || isAuthPopoverShown)) {
@@ -192,6 +193,7 @@ function showAuthPopover(): void {
   $authPopover.show();
   isAuthPopoverShown = true;
   $passwordField.focus();
+  $errorMsg.hide();
 }
 
 function hidePopovers(): void {
@@ -210,9 +212,11 @@ async function confirmAddTime(): Promise<void> {
   pendingPasswordValidation = true;
   const response = await sendAction(Action.validatePassword,
     { password: $passwordField.val() });
-  if (response && response.isPasswordValid) {
+  if (response?.isPasswordValid) {
     sendAction(Action.addTime, { time: secondsToAdd });
     hidePopovers();
+  } else {
+    $errorMsg.show();
   }
   pendingPasswordValidation = false;
 }

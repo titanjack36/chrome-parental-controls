@@ -25,7 +25,10 @@ export default function getTimerTemplate(templateUuid: string, timeOptions: Time
     <div id="${uuid}_authPopover" class="${uuid}_popover" style="${popoverSizeCss}">
       <div id="${uuid}_authWrapper">
         <div class="${uuid}_title">Enter Password</div>
-        <input type="password" id="${uuid}_password">
+        <div id="${uuid}_passwordWrapper">
+          <input type="password" id="${uuid}_password">
+          <div id="${uuid}_errorMsg">Invalid password.</div>
+        </div>
         <div id="${uuid}_prompt"></div>
         <div class="${uuid}_buttonRow">
           <button class="${uuid}_action" id="${uuid}_backBtn">Back</button>

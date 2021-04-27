@@ -30,10 +30,12 @@ var secondsToAdd = 0;
 var pendingPasswordValidation = false;
 var $passwordField;
 var $authSection;
+var $errorMsg;
 
 $(document).ready(function () {
   $passwordField = $("#password");
   $authSection = $("#auth");
+  $errorMsg = $("#errorMsg");
 
   $("#timeOptionGroup").append(
     timeOptions.map(
@@ -54,6 +56,7 @@ $(document).ready(function () {
     $this.addClass("selected");
     $authSection.show();
     $passwordField.focus();
+    $errorMsg.hide();
   });
 
   $(`#confirmBtn`).click(function () {
@@ -74,13 +77,16 @@ async function confirmAddTime() {
   pendingPasswordValidation = true;
   const response = await sendAction(Action.validatePassword, 
     { password: $passwordField.val() });
-  if (response && response.isPasswordValid) {
+  if (response?.isPasswordValid) {
     sendAction(Action.addTime, { time: secondsToAdd });
     $(".timeOption").each((idx, option) => {
       $(option).removeClass("selected")
     });
     $authSection.hide();
+    $errorMsg.hide();
     sendAction(Action.restorePage);
+  } else {
+    $errorMsg.show();
   }
   pendingPasswordValidation = false;
 }
