@@ -13,7 +13,5 @@ export const Action = {
   setPassword: 'SET_PASSWORD',
   validatePassword: 'VALIDATE_PASSWORD',
   checkPasswordExists: 'CHECK_PASSWORD_EXISTS',
-  setBlockAndLogSiteList: 'SET_BLOCK_AND_LOG_SITE_LIST',
-  getActiveSitesFromTab: 'GET_ACTIVE_SITES_FROM_TAB',
-  setIsTimerEnabled: 'SET_IS_TIMER_ENABLED'
+  getActiveSitesFromTab: 'GET_ACTIVE_SITES_FROM_TAB'
 }

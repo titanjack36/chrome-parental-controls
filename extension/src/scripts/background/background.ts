@@ -87,7 +87,6 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case Action.updateExtConfig:
       const { isTimerEnabled, useAutoReset, timeBlockSitesOnly, useBreaks, 
         useLogging, useBlockSitesAsLogSites, blockSiteList, logSiteList } = request;
-      let siteListChanged: boolean = false;
       if (isTimerEnabled !== undefined) {
         extConfig.isTimerEnabled = !!isTimerEnabled;
         updateTimerState();
@@ -106,23 +105,14 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       }
       if (useBlockSitesAsLogSites !== undefined) {
         extConfig.useBlockSitesAsLogSites = !!useBlockSitesAsLogSites;
-        siteListChanged = true;
       }
       if (blockSiteList) {
         extConfig.blockSiteList = blockSiteList;
-        siteListChanged = true;
       }
       if (logSiteList) {
         extConfig.logSiteList = logSiteList;
-        siteListChanged = true;
       }
-      if (siteListChanged) {
-        sendActionToAllTabs(Action.setBlockAndLogSiteList, {
-          blockSiteList: extConfig.blockSiteList,
-          logSiteList: extConfig.useBlockSitesAsLogSites ? 
-            extConfig.blockSiteList : extConfig.logSiteList
-        });
-      }
+      sendActionToAllTabs(Action.updateExtConfig, { extConfig });
       saveExtConfig(extConfig);
       break;
 

@@ -3,17 +3,23 @@ import { Mutex } from 'async-mutex';
 import { sendAction } from '../utils/extension.util';
 import { Action } from '../models/message.interface';
 import Timer from '../utils/timer.util';
-import { EmbeddedSite, Site } from '../models/config.interface';
+import { EmbeddedSite, ExtConfig, Site } from '../models/config.interface';
 import { TimeOption } from '../models/timer.interface';
 import * as timeOptionsConfig from '../../config/time-options.json';
 import getTimerTemplate from '../templates/timer.template';
 import getBlockScreenTemplate from '../templates/block-screen.template';
 
-var blockSiteList: Site[] = [];
-var logSiteList: Site[] = [];
-
+var tabExtConfig: ExtConfig = {
+  isTimerEnabled: false,
+  useAutoReset: false,
+  timeBlockSitesOnly: false,
+  useBreaks: false,
+  useLogging: false,
+  useBlockSitesAsLogSites: false,
+  blockSiteList: [],
+  logSiteList: []
+};
 var tabTimer: Timer = new Timer();
-var tabBlockSite: Site;
 var matchingBlockSites: Site[] = [];
 var matchingLogSites: Site[] = [];
 var activeBlockScreens: JQuery[] = [];
@@ -32,15 +38,10 @@ sendAction(Action.getTimerStateAndExtConfig).then(response => {
   if (!response || !response.timerState || !response.extConfig) {
     return;
   }
-  const { timerState, extConfig } = response;
-  tabTimer.sync(timerState);
-  if (extConfig.blockSiteList && extConfig.logSiteList) {
-    blockSiteList = extConfig.blockSiteList;
-    logSiteList = extConfig.useBlockSitesAsLogSites ? 
-      extConfig.blockSiteList : extConfig.logSiteList;
-  }
+  tabTimer.sync(response.timerState);
+  tabExtConfig = response.extConfig;
   updateMatchingSites();
-  updateTabTimerDisplay(extConfig.isTimerEnabled);
+  updateTabTimerDisplay();
 });
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
@@ -57,18 +58,12 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
       response = { activeBlockSiteUrls, activeLogSiteUrls };
       break;
 
-    case Action.setBlockAndLogSiteList:
-      if (request.blockSiteList && request.logSiteList) {
-        blockSiteList = request.blockSiteList;
-        logSiteList = request.logSiteList;
+    case Action.updateExtConfig:
+      if (request.extConfig) {
+        tabExtConfig = request.extConfig;
         updateMatchingSites();
-        updateTabTimerDisplay(request.isTimerEnabled);
+        updateTabTimerDisplay();
       }
-      break;
-
-    case Action.setIsTimerEnabled:
-      updateMatchingSites();
-      updateTabTimerDisplay(request.isTimerEnabled);
       break;
 
     case Action.setTimerState:
@@ -238,8 +233,10 @@ function checkIfSiteIsActive(siteData: Site): boolean {
 var embeddedBlockSiteMap: Map<number, EmbeddedSite> = new Map();
 var blockSiteIdCounter = 0;
 function updateMatchingSites(forceUpdate: boolean = false) {
+  const blockSiteList = tabExtConfig.blockSiteList;
+  const logSiteList = tabExtConfig.useBlockSitesAsLogSites ?
+    blockSiteList : tabExtConfig.logSiteList;
   const newEmbeddedBlockSiteMap: Map<number, EmbeddedSite> = new Map();
-
   const $iframes = $("iframe").toArray().map(iframe => $(iframe))
     .filter($iframe => $iframe.attr("src"));
 
@@ -314,26 +311,11 @@ function clearActiveBlockScreens(): void {
   activeBlockScreens = [];
 }
 
-// Mutex is required to ensure race condition does not occur with
-// show/hide timer
-const mutex = new Mutex();
-async function updateTabTimerDisplay(isTimerEnabled?: boolean): Promise<void> {
-  const release = await mutex.acquire();
-  try {
-    if (tabBlockSite || activeBlockScreens.length || matchingBlockSites.length) {
-      if (isTimerEnabled === undefined) {
-        const response = await sendAction(Action.getExtConfig);
-        isTimerEnabled = !!response.isTimerEnabled;
-      }
-      if (isTimerEnabled) {
-        showTimer();
-      } else {
-        hideTimer();
-      }
-    } else {
-      hideTimer();
-    }
-  } finally {
-    release();
+async function updateTabTimerDisplay(): Promise<void> {
+  if (tabExtConfig.isTimerEnabled && 
+      (activeBlockScreens.length || matchingBlockSites.length)) {
+    showTimer();
+  } else {
+    hideTimer();
   }
 }
