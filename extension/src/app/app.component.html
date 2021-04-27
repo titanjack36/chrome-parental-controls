@@ -1,0 +1,11 @@
+<div class="w-100 h-100" *ngIf="resetPassword; else showDashboard">
+  <app-auth-reset></app-auth-reset>
+</div>
+<ng-template #showDashboard>
+  <div *ngIf="isAuthenticated; else showAuth">
+    <app-dashboard></app-dashboard>
+  </div>
+</ng-template>
+<ng-template #showAuth>
+  <app-auth></app-auth>
+</ng-template>

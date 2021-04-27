@@ -1,0 +1,105 @@
+:host {
+  display: flex;
+  justify-content: center;
+  margin-top: 1rem;
+}
+
+#timer {
+  display: inline-flex;
+  position: relative;
+  font-family: Arial;
+
+  border: 1px solid #a7a7a7;
+  border-radius: 5px;
+  padding: 0 1rem;
+}
+
+#timerInput {
+  position: absolute;
+  height: 100%;
+  width: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.timer-value {
+  width: 35px;
+  font-size: 4rem;
+  
+  display: flex;
+  justify-content: center;
+}
+
+.timer-value.greyedOut {
+  color: #dbdbdb;
+}
+
+.timer-label {
+  height: inherit;
+  font-size: 2rem;
+  padding-bottom: 0.75rem;
+  padding-right: 0.75rem;
+  
+  display: flex;
+  align-items: flex-end;
+}
+
+#secLabel {
+  padding-right: 0;
+}
+
+.cursorLine {
+  width: 1px;
+  height: inherit;
+  margin: 0.5rem 0;
+  background: transparent;
+  animation: blinker 1.25s step-start infinite;
+  box-sizing: border-box;
+}
+
+.cursorLine.showCursor {
+  background: black;
+}
+
+@keyframes blinker {
+  50% {
+    opacity: 0;
+  }
+}
+
+.timer-actions {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  margin-left: 1rem;
+  padding: 0.5rem 0;
+}
+
+.timer-actions.edit {
+  justify-content: center;
+}
+
+.timer-actions button {
+  width: 35px;
+  height: 35px;
+  padding: 0;
+
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.timer-actions img {
+  width: 18px;
+  height: 18px;
+  transition: all 0.25s ease-in-out;
+}
+
+.timer-actions button:hover img {
+  transform: scale(1.2);
+}
+
+.timer-actions button:hover img {
+  transform: scale(1);
+}

@@ -1,0 +1,15 @@
+<div class="page">
+  <h2>Create New Password</h2>
+  <div *ngIf="hasExistingPassword">
+    <label for="currentPassword">Current Password</label>
+    <input type="password" class="form-control" id="currentPassword"
+      [(ngModel)]="currentPassword"/>
+  </div>
+  <label for="newPassword">New Password</label>
+  <input type="password" class="form-control" id="newPassword"
+    [(ngModel)]="newPassword"/>
+  <label for="confirmPassword">Confirm Password</label>
+  <input type="password" class="form-control" id="confirmPassword"
+    [(ngModel)]="repeatedNewPassword" (keyup.enter)="onSubmit()"/>
+  <button type="submit" class="btn btn-primary mt-3" (click)="onSubmit()">Continue</button>
+</div>

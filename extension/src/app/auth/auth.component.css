@@ -1,0 +1,19 @@
+:host {
+  height: 100%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.page {
+  border-radius: 6px;
+  max-width: 800px;
+  width: 350px;
+  padding: 1.2rem;
+  padding-top: 1rem;
+
+  -webkit-box-shadow: -1px -2px 26px 8px rgba(0, 0, 0, 0.18);
+  -moz-box-shadow: -1px -2px 26px 8px rgba(0, 0, 0, 0.18);
+  box-shadow: -1px -2px 26px 8px rgba(0, 0, 0, 0.18);
+}

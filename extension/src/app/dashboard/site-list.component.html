@@ -1,0 +1,56 @@
+<div class="site-list py-3">
+  <div class="list-item" *ngFor="let site of siteList; let idx = index">
+    <div class="url">{{site.url}}</div>
+    <div class="actions d-flex">
+      <button
+        type="button"
+        *ngIf="showVideoOption && site.videoSiteData"
+        class="video-site-btn"
+        [ngbPopover]="videoSiteSettings"
+        popoverTitle="Video Site Options"
+        autoClose="outside"
+        placement="bottom auto">
+        <img src="assets/icons/video-icon.svg" alt="Video Site Options">
+      </button>
+      <ng-template #videoSiteSettings>
+        <div *ngIf="site.videoSiteData?.timeVideoOnly; else enablePrompt">
+          <div>Countdown timer will only activate when watching video.</div>
+          <button type="button" class="btn btn-secondary mt-2"
+            (click)="handleDisableVideoSetting(idx)">
+            Click to Disable
+          </button>
+        </div>
+        <ng-template #enablePrompt>
+          <div>Enable countdown timer only when watching video?</div>
+          <button type="button" class="btn btn-secondary mt-2"
+            (click)="handleEnableVideoSetting(idx)">
+            Click to Enable
+          </button>
+        </ng-template>
+      </ng-template>
+      <button type="button" class="delete-site-btn"
+        [ngbPopover]="confirmDelete" autoClose="outside" placement="right left">
+        <img src="assets/icons/close-icon.svg">
+      </button>
+      <ng-template #confirmDelete>
+        <button type="button" class="btn btn-danger" (click)="handleDeleteSite(idx)">
+            Confirm Delete
+        </button>
+      </ng-template>
+    </div>
+  </div>
+</div>
+<div class="d-flex">
+  <div class="flex-grow-1 mr-2">
+    <input
+      type="text"
+      class="form-control"
+      [class.is-invalid]="addSiteError"
+      placeholder="www.example.com"
+      [(ngModel)]="inputSiteUrl"
+      (keyup.enter)="handleAddSite()"/>
+    <small class="text-danger" *ngIf="addSiteError">{{addSiteError}}</small>
+  </div>
+  <button type="submit" class="btn btn-primary align-self-start"
+    (click)="handleAddSite()">Add Site</button>
+</div>

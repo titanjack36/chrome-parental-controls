@@ -1,0 +1,5 @@
+[
+  { "url": "youtube.com", "selector": ".playing-mode", "activateOnSelectorFound": true },
+  { "url": "tfo.org", "selector": ".jw-state-playing", "activateOnSelectorFound": true },
+  { "url": "tvokids.com", "selector": ".vjs-playing", "activateOnSelectorFound": true }
+]

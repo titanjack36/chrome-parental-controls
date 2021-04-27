@@ -1,0 +1,49 @@
+<div id="timer">
+  <input type="text"
+    id="timerInput"
+    (keypress)="handleTimerAddDigit($event)"
+    (keydown.backspace)="handleTimerRemoveDigit()"
+    (keydown.enter)="handleSaveEdit()"
+    type="number"
+    inputmode="numeric"
+    (focus)="handleEdit()"
+    (focusout)="handleSaveEdit()"
+    #timerInput>
+  <div id="hrTens" class="timer-value" [class.greyedOut]="timerDisplay.hrTens.greyedOut">
+    {{ timerDisplay.hrTens.value }}
+  </div>
+  <div id="hrOnes" class="timer-value" [class.greyedOut]="timerDisplay.hrOnes.greyedOut">
+    {{ timerDisplay.hrOnes.value }}
+  </div>
+  <div id="hrLabel" class="timer-label">h</div>
+  <div id="minTens" class="timer-value" [class.greyedOut]="timerDisplay.minTens.greyedOut">
+    {{ timerDisplay.minTens.value }}
+  </div>
+  <div id="minOnes" class="timer-value" [class.greyedOut]="timerDisplay.minOnes.greyedOut">
+    {{ timerDisplay.minOnes.value }}
+  </div>
+  <div id="minLabel" class="timer-label">m</div>
+  <div id="secTens" class="timer-value" [class.greyedOut]="timerDisplay.secTens.greyedOut">
+    {{ timerDisplay.secTens.value }}
+  </div>
+  <div id="secOnes" class="timer-value" [class.greyedOut]="timerDisplay.secOnes.greyedOut">
+    {{ timerDisplay.secOnes.value }}
+  </div>
+  <div class="cursorLine" [class.showCursor]="isEditingTimer"></div>
+  <div id="secLabel" class="timer-label">s</div>
+</div>
+<div class="timer-actions" *ngIf="!isEditingTimer; else timerEditActions">
+  <button class="btn btn-outline-secondary" (click)="handleEdit()">
+    <img src="assets/icons/edit-icon.svg" alt="Edit">
+  </button>
+  <button class="btn btn-outline-secondary" (click)="handleReset()">
+    <img src="assets/icons/reset-icon.svg" alt="Reset">
+  </button>
+</div>
+<ng-template #timerEditActions>
+  <div class="timer-actions edit">
+    <button class="btn btn-outline-secondary" (click)="handleSaveEdit()">
+      <img src="assets/icons/confirm-icon.svg" alt="Save">
+    </button>
+  </div>
+</ng-template>

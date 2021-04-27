@@ -1,0 +1,11 @@
+[
+  { "id": "select10Min", "timeStr": "10 Min", "fullTimeStr": "10 Minutes", "timeInSecs": 600 },
+  { "id": "select15Min", "timeStr": "15 Min", "fullTimeStr": "15 Minutes", "timeInSecs": 900 },
+  { "id": "select20Min", "timeStr": "20 Min", "fullTimeStr": "20 Minutes", "timeInSecs": 1200 },
+  { "id": "select25Min", "timeStr": "25 Min", "fullTimeStr": "25 Minutes", "timeInSecs": 1500 },
+  { "id": "select30Min", "timeStr": "30 Min", "fullTimeStr": "30 Minutes", "timeInSecs": 1800 },
+  { "id": "select45Min", "timeStr": "45 Min", "fullTimeStr": "45 Minutes", "timeInSecs": 2700 },
+  { "id": "select1Hr", "timeStr": "1 Hr", "fullTimeStr": "1 Hour", "timeInSecs": 3600 },
+  { "id": "select1_5Hr", "timeStr": "1.5 Hr", "fullTimeStr": "1.5 Hours", "timeInSecs": 5400 },
+  { "id": "select2Hr", "timeStr": "2 Hr", "fullTimeStr": "2 Hours", "timeInSecs": 7200 }
+]

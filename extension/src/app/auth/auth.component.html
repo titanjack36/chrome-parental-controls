@@ -1,0 +1,9 @@
+<div class="page">
+  <h2>Authentication</h2>
+  <label for="inputPassword">Enter Your Password</label>
+  <input type="password" class="form-control" id="inputPassword"
+    [(ngModel)]="password" (keyup.enter)="onContinue()" autofocus/>
+  <button type="submit" class="btn btn-primary mt-3" (click)="onContinue()">
+    Continue
+  </button>
+</div>

@@ -1,0 +1,75 @@
+<h1>Dashboard</h1>
+<h2>Timer</h2>
+<hr />
+<div class="group">
+  <div class="d-flex align-items-center mb-2">
+    <input class="toggle" type="checkbox" id="toggleTimer"
+      [(ngModel)]="extConfig.isTimerEnabled" (change)="handleUpdateExtConfig()"/>
+    <label class="toggle" for="toggleTimer">Toggle</label>
+    <b>Enable Timer</b>
+  </div>
+  <div class="d-flex align-items-center">
+    <input class="toggle" type="checkbox" id="enableAutoReset" 
+      [(ngModel)]="extConfig.useAutoReset" (change)="handleUpdateExtConfig()"/>
+    <label class="toggle" for="enableAutoReset">Toggle</label>
+    <b>Auto Reset Every Day</b>
+  </div>
+  <app-timer></app-timer>
+</div>
+<h2>Breaks</h2>
+<hr />
+<div class="group">
+  <div class="d-flex align-items-center">
+    <input class="toggle" type="checkbox" id="enableBreaks"
+    [(ngModel)]="extConfig.useBreaks" (change)="handleUpdateExtConfig()"/>
+    <label class="toggle" for="enableBreaks">Toggle</label>
+    <b>Enable Breaks</b>
+  </div>
+</div>
+<h2>Block List</h2>
+<hr />
+<div class="group">
+  <div class="d-flex align-items-center">
+    <input class="toggle" type="checkbox" id="enableBlockList" 
+      [(ngModel)]="extConfig.timeBlockSitesOnly" (change)="handleUpdateExtConfig()"/>
+    <label class="toggle" for="enableBlockList">Toggle</label>
+    <b>Only Run Timer When Visiting Block Site</b>
+  </div>
+  <app-site-list
+    [siteList]="extConfig.blockSiteList"
+    [showVideoOption]="true"
+    (onSiteListChange)="handleUpdateExtConfig()">
+  </app-site-list>
+</div>
+<h2>Site Logging</h2>
+<hr />
+<div class="group">
+  <div class="d-flex align-items-center mb-2">
+    <input class="toggle" type="checkbox" id="enableLogging"
+      [(ngModel)]="extConfig.useLogging" (change)="handleUpdateExtConfig()"/>
+    <label class="toggle" for="enableLogging">Toggle</label>
+    <b>Enable Active Site Logging</b>
+  </div>
+  <div class="d-flex align-items-center">
+    <input class="toggle" type="checkbox" id="mirrorBlockList"
+      [(ngModel)]="extConfig.useBlockSitesAsLogSites" (change)="handleUpdateExtConfig()"/>
+    <label class="toggle" for="mirrorBlockList">Toggle</label>
+    <b>Mirror Block Site List</b>
+  </div>
+  <app-site-list
+    *ngIf="!extConfig.useBlockSitesAsLogSites"
+    [siteList]="extConfig.logSiteList"
+    [showVideoOption]="false"
+    (onSiteListChange)="handleUpdateExtConfig()">
+  </app-site-list>
+</div>
+<h2>Settings</h2>
+<hr />
+<div class="group">
+  <div class="d-flex justify-content-center">
+    <button type="button" class="btn btn-outline-secondary center-button" 
+      (click)="handleChangePassword()">
+      Change Password
+    </button>
+  </div>
+</div>
