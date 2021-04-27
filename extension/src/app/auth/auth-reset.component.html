@@ -1,15 +1,34 @@
 <div class="page">
   <h2>Create New Password</h2>
-  <div *ngIf="hasExistingPassword">
+  <div *ngIf="isAuthenticated">
     <label for="currentPassword">Current Password</label>
-    <input type="password" class="form-control" id="currentPassword"
+    <input
+      type="password"
+      class="form-control"
+      [class.is-invalid]="authError"
+      id="currentPassword"
       [(ngModel)]="currentPassword"/>
+    <div class="text-danger" *ngIf="authError"><small>{{authError}}</small></div>
   </div>
   <label for="newPassword">New Password</label>
-  <input type="password" class="form-control" id="newPassword"
+  <input
+    type="password"
+    class="form-control"
+    [class.is-invalid]="authResetError"
+    id="newPassword"
     [(ngModel)]="newPassword"/>
   <label for="confirmPassword">Confirm Password</label>
-  <input type="password" class="form-control" id="confirmPassword"
-    [(ngModel)]="repeatedNewPassword" (keyup.enter)="onSubmit()"/>
-  <button type="submit" class="btn btn-primary mt-3" (click)="onSubmit()">Continue</button>
+  <input
+    type="password"
+    class="form-control"
+    [class.is-invalid]="authResetError"
+    id="confirmPassword"
+    [(ngModel)]="repeatedNewPassword"
+    (keyup.enter)="handleSubmit()"/>
+  <div class="text-danger" *ngIf="authResetError"><small>{{authResetError}}</small></div>
+  <div>
+    <button type="submit" class="btn btn-primary mt-3" (click)="handleSubmit()">Continue</button>
+    <button class="btn btn-secondary mt-3 ml-2" *ngIf="isAuthenticated"
+      (click)="handleCancel()">Cancel</button>
+  </div>
 </div>

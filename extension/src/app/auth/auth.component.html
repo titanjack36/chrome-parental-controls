@@ -1,9 +1,16 @@
 <div class="page">
   <h2>Authentication</h2>
   <label for="inputPassword">Enter Your Password</label>
-  <input type="password" class="form-control" id="inputPassword"
-    [(ngModel)]="password" (keyup.enter)="onContinue()" autofocus/>
-  <button type="submit" class="btn btn-primary mt-3" (click)="onContinue()">
+  <input
+    type="password"
+    class="form-control"
+    [class.is-invalid]="authError"
+    id="inputPassword"
+    [(ngModel)]="password"
+    (keyup.enter)="handleContinue()"
+    autofocus/>
+  <div class="text-danger" *ngIf="authError"><small>{{authError}}</small></div>
+  <button type="submit" class="btn btn-primary mt-3" (click)="handleContinue()">
     Continue
   </button>
 </div>

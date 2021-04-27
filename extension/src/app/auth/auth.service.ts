@@ -15,6 +15,10 @@ export class AuthService {
     return this.authState.asObservable();
   }
 
+  isAuthenticatedNow(): boolean {
+    return this.authState.value;
+  }
+
   isAuthReset(): Observable<boolean> {
     return this.authReset.asObservable();
   }

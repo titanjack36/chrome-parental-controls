@@ -8,12 +8,16 @@ import { AuthService } from './auth.service';
 })
 export class AuthComponent implements OnInit {
   password: string = '';
+  authError: string = '';
 
   constructor(private authService: AuthService) { }
 
   ngOnInit() { }
 
-  onContinue() {
-    this.authService.tryUnlock(this.password);
+  async handleContinue() {
+    const success = await this.authService.tryUnlock(this.password);
+    if (!success) {
+      this.authError = 'Incorrect password.'
+    }
   }
 }
