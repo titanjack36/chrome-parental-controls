@@ -1,11 +1,11 @@
-const { body } = require('express-validator');
+const { body, query } = require('express-validator');
 
 exports.logSchema = [
-  body('timeStart')
+  body('startTime')
     .exists()
     .isISO8601()
     .toDate(),
-  body('timeEnd')
+  body('endTime')
     .exists()
     .isISO8601()
     .toDate(),
@@ -18,15 +18,15 @@ exports.logSchema = [
 ];
 
 exports.getlogSchema = [
-  body('timeStart')
+  query('startTime')
     .exists()
     .isISO8601()
     .toDate(),
-  body('timeEnd')
+  query('endTime')
     .exists()
     .isISO8601()
     .toDate(),
-  body('extensionId')
+  query('extensionId')
     .exists()
     .isString()
 ];

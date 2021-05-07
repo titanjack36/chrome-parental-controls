@@ -5,20 +5,20 @@ class TimelogService {
   instanceMap = new Map();
   newSiteCounter = 0;
 
-  getActiveSite = (siteUrl, extensionId, currentTimeStart) => {
+  getActiveSite = (siteUrl, extensionId, currentStartTime) => {
     let activeSiteMap = this.instanceMap.get(extensionId);
     if (!activeSiteMap) {
       return null;
     }
     let activeSiteData = activeSiteMap.get(siteUrl);
-    if (!activeSiteData || differenceInSeconds(currentTimeStart,
+    if (!activeSiteData || differenceInSeconds(currentStartTime,
         activeSiteData.lastActiveTime) > activeSiteExpiryTime) {
       return null;
     }
     return activeSiteData;
   }
 
-  setActiveSite = (id, timeEnd, siteUrl, extensionId) => {
+  setActiveSite = (id, endTime, siteUrl, extensionId) => {
     let activeSiteMap = this.instanceMap.get(extensionId);
     if (!activeSiteMap) {
       activeSiteMap = new Map();
@@ -27,11 +27,11 @@ class TimelogService {
     let activeSiteData = activeSiteMap.get(siteUrl);
     if (!activeSiteData) {
       this.newSiteCounter++;
-      activeSiteData = { id, lastActiveTime: timeEnd };
+      activeSiteData = { id, lastActiveTime: endTime };
       activeSiteMap.set(siteUrl, activeSiteData);
     } else {
       activeSiteData.id = id;
-      activeSiteData.lastActiveTime = timeEnd;
+      activeSiteData.lastActiveTime = endTime;
     }
 
     if (this.newSiteCounter >= 500) {

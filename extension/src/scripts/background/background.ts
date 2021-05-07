@@ -173,8 +173,8 @@ var logActiveSitesInterval = setInterval(async () => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          timeStart: lastLogTime.toISOString(),
-          timeEnd: newTime.toISOString(),
+          startTime: lastLogTime.toISOString(),
+          endTime: newTime.toISOString(),
           siteUrls: Array.from(activeLogSiteMap),
           extensionId: chrome.runtime.id
         })

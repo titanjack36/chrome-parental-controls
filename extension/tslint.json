@@ -48,7 +48,6 @@
       "debug",
       "info",
       "time",
-      "timeEnd",
       "trace"
     ],
     "no-empty": false,
