@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="wrap_content" android:layout_height="wrap_content" android:layout_marginBottom="5dp">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/site_placeholder"
+        android:textStyle="bold"
+        android:id="@+id/siteUrl"
+        android:layout_alignParentStart="true"
+        android:layout_marginStart="4dp"
+        android:textSize="16sp"/>
+
+    <ImageView
+        android:layout_width="wrap_content"
+        android:layout_height="19dp"
+        android:id="@+id/startTimeIcon"
+        android:layout_below="@+id/siteUrl"
+        android:layout_alignParentStart="true"
+        android:src="@drawable/ic_time"
+        android:contentDescription="@string/duration_desc"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/time_placeholder"
+        android:id="@+id/startTime"
+        android:layout_below="@+id/siteUrl"
+        android:layout_toEndOf="@id/startTimeIcon"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/separator"
+        android:id="@+id/separator"
+        android:layout_below="@+id/siteUrl"
+        android:layout_toEndOf="@+id/startTime"
+        android:paddingHorizontal="3dp"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/duration_placeholder"
+        android:id="@+id/duration"
+        android:layout_below="@+id/siteUrl"
+        android:layout_toEndOf="@+id/separator"/>
+
+</RelativeLayout>

@@ -1,0 +1,19 @@
+<resources>
+    <string name="app_name">ParentalControlApp</string>
+    <string name="time_placeholder">12:00 AM</string>
+    <string name="duration_placeholder">30 Minutes</string>
+    <string name="site_placeholder">www.example.com</string>
+    <string name="separator">·</string>
+    <string name="duration_desc">Duration Icon</string>
+    <string name="start_time_desc">Start Time Icon</string>
+    <string name="list_load_error">Failed to load site history.</string>
+    <string name="retry">Retry</string>
+    <string name="api_url_name">api_url</string>
+    <string name="ext_id_name">extension_id</string>
+    <string name="change_date">Change Date</string>
+    <string name="date_placeholder">Monday January 19</string>
+    <string name="refresh">Refresh</string>
+    <string name="empty_list_message">There were no visited sites for this date</string>
+    <string name="empty_list_message_today">There are no visited sites yet for today</string>
+    <string name="date_today">%s (Today)</string>
+</resources>
