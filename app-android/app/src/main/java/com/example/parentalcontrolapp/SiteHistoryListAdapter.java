@@ -25,7 +25,7 @@ public class SiteHistoryListAdapter extends RecyclerView.Adapter<SiteHistoryList
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
         holder.startTime.setText(sites.get(position).getFormattedStartTime());
         holder.siteUrl.setText(sites.get(position).getSiteUrl());
-        holder.duration.setText(sites.get(position).getDuration());
+        holder.duration.setText(sites.get(position).getFormattedDuration());
     }
 
     @Override
