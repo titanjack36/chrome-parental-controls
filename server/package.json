@@ -16,14 +16,14 @@
     "dotenv": "^8.2.0",
     "express": "^4.17.1",
     "express-validator": "^6.10.0",
-    "filemanager-webpack-plugin": "^4.0.0",
     "fs": "*",
     "mysql2": "^2.2.5",
     "sqlstring": "^2.3.2",
-    "uuid": "^8.3.2",
-    "webpack": "^5.36.2"
+    "uuid": "^8.3.2"
   },
   "devDependencies": {
+    "filemanager-webpack-plugin": "^4.0.0",
+    "webpack": "^5.36.2",
     "webpack-cli": "^4.7.0"
   }
 }
