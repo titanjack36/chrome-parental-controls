@@ -4,12 +4,6 @@ const HttpException = require('../utils/httpException');
 const timelogService = require('../services/timelog.service');
 const timelogModel = require('../models/timelog.model');
 
-const startOfDay = require('date-fns/startOfDay');
-const endOfDay = require('date-fns/endOfDay');
-const addDays = require('date-fns/addDays');
-const formatDistance = require('date-fns/formatDistance');
-const format = require('date-fns/format');
-
 class TimelogController {
   log = async (req, res, next) => {
     this.checkValidation(req);
@@ -31,25 +25,22 @@ class TimelogController {
 
   getlog = async (req, res, next) => {
     this.checkValidation(req);
-    const { startTime, endTime, extensionId } = req.query;
-    const result = await timelogModel.fetch(startTime, endTime, extensionId);
-    res.send(JSON.stringify(result.map(entry => this.timelogDbMap(entry))));
+    const { startTime, endTime, extensionId, sort } = req.query;
+    let order = [];
+    if (sort) {
+      order = sort.split(',').map(entryStr => {
+        const entry = entryStr.split(':');
+        return { orderBy: entry[0], isDesc: entry[1] === 'descending' };
+      });
+    }
+    const result = await timelogModel.fetch(startTime, endTime, extensionId, order);
+    res.send(JSON.stringify(result));
   }
 
   checkValidation = (req) => {
     const errors = validationResult(req);
     if (!errors.isEmpty()) {
       throw new HttpException(400, 'Validation failed.', errors);
-    }
-  }
-
-  timelogDbMap = (entry) => {
-    return {
-      id: entry.id,
-      startTime: entry.time_start,
-      endTime: entry.time_end,
-      siteUrl: entry.site_url,
-      duration: formatDistance(entry.time_end, entry.time_start)
     }
   }
 }

@@ -1,3 +1,5 @@
+const FileManagerPlugin = require('filemanager-webpack-plugin');
+
 module.exports = {
   entry: './src/server.js',
   target: "node",
@@ -7,4 +9,18 @@ module.exports = {
     __filename: false,
     __dirname: false,
   },
+  plugins: [
+    new FileManagerPlugin({
+      events: {
+        onEnd: {
+          copy: [
+            {
+              source: `./.env`,
+              destination: './dist/',
+            },
+          ]
+        }
+      }
+    })
+  ],
 };

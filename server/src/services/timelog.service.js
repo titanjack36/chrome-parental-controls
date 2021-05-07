@@ -1,11 +1,21 @@
-const differenceInSeconds = require('date-fns/differenceInSeconds')
+const differenceInSeconds = require('date-fns/differenceInSeconds');
+const isSameDay = require('date-fns/isSameDay');
 const activeSiteExpiryTime = 60;
 
 class TimelogService {
   instanceMap = new Map();
   newSiteCounter = 0;
+  lastRecordedTime = new Date();
 
   getActiveSite = (siteUrl, extensionId, currentStartTime) => {
+    const currentTime = new Date();
+    if (!isSameDay(currentTime, this.lastRecordedTime)) {
+      // Ensure website duration does not span across days
+      this.instanceMap = new Map();
+      this.newSiteCounter = 0;
+    }
+    this.lastRecordedTime = currentTime;
+
     let activeSiteMap = this.instanceMap.get(extensionId);
     if (!activeSiteMap) {
       return null;
