@@ -7,11 +7,14 @@
 
     <TextView
         android:id="@+id/siteUrl"
-        android:layout_width="wrap_content"
+        android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentStart="true"
+        android:layout_toStartOf="@+id/activeBadge"
         android:text="@string/site_placeholder"
         android:textSize="16sp"
+        android:ellipsize="end"
+        android:maxLines="1"
         android:layout_marginStart="4dp"/>
 
     <ImageView
@@ -30,6 +33,18 @@
         android:id="@+id/duration"
         android:layout_below="@+id/siteUrl"
         android:layout_toEndOf="@+id/durationIcon"/>
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="@string/active"
+        android:textColor="#FFFFFF"
+        android:id="@+id/activeBadge"
+        android:layout_toStartOf="@+id/startTime"
+        android:layout_marginEnd="4dp"
+        android:background="@drawable/rounded_corners"
+        android:paddingHorizontal="4dp"
+        android:visibility="invisible"/>
 
     <TextView
         android:layout_width="wrap_content"

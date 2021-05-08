@@ -23,9 +23,11 @@ public class SiteHistoryListAdapter extends RecyclerView.Adapter<SiteHistoryList
 
     @Override
     public void onBindViewHolder(@NonNull ViewHolder holder, int position) {
-        holder.startTime.setText(sites.get(position).getFormattedStartTime());
-        holder.siteUrl.setText(sites.get(position).getSiteUrl());
-        holder.duration.setText(sites.get(position).getFormattedDuration());
+        Site site = sites.get(position);
+        holder.startTime.setText(site.getFormattedStartTime());
+        holder.siteUrl.setText(site.getSiteUrl());
+        holder.duration.setText(site.getFormattedDuration());
+        holder.activeBadge.setVisibility(site.isActive() ? View.VISIBLE : View.INVISIBLE);
     }
 
     @Override
@@ -43,6 +45,7 @@ public class SiteHistoryListAdapter extends RecyclerView.Adapter<SiteHistoryList
         private final TextView startTime;
         private final TextView siteUrl;
         private final TextView duration;
+        private final TextView activeBadge;
 
         public ViewHolder(@NonNull View itemView) {
             super(itemView);
@@ -50,6 +53,7 @@ public class SiteHistoryListAdapter extends RecyclerView.Adapter<SiteHistoryList
             startTime = itemView.findViewById(R.id.startTime);
             siteUrl = itemView.findViewById(R.id.siteUrl);
             duration = itemView.findViewById(R.id.duration);
+            activeBadge = itemView.findViewById(R.id.activeBadge);
         }
     }
 }

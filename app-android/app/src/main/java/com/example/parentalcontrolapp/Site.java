@@ -7,17 +7,28 @@ import org.joda.time.format.PeriodFormatter;
 import org.joda.time.format.PeriodFormatterBuilder;
 
 public class Site {
-    private String id = null;
-    private DateTime startTime = null;
-    private DateTime endTime = null;
-    private String siteUrl = null;
-    private int duration = 0;
+    private String id;
+    private DateTime startTime;
+    private DateTime endTime;
+    private String siteUrl;
+    private int duration;
+    private boolean isActive;
 
-    public Site(DateTime startTime, DateTime endTime, String siteUrl, int duration) {
+    public Site(String id, DateTime startTime, DateTime endTime, String siteUrl, int duration, boolean isActive) {
+        this.id = id;
         this.startTime = startTime;
         this.endTime = endTime;
         this.siteUrl = siteUrl;
         this.duration = duration;
+        this.isActive = isActive;
+    }
+
+    public String getId() {
+        return id;
+    }
+
+    public void setId(String id) {
+        this.id = id;
     }
 
     public DateTime getStartTime() {
@@ -26,6 +37,14 @@ public class Site {
 
     public void setStartTime(DateTime startTime) {
         this.startTime = startTime;
+    }
+
+    public DateTime getEndTime() {
+        return endTime;
+    }
+
+    public void setEndTime(DateTime endTime) {
+        this.endTime = endTime;
     }
 
     public String getSiteUrl() {
@@ -44,20 +63,12 @@ public class Site {
         this.duration = duration;
     }
 
-    public String getId() {
-        return id;
+    public boolean isActive() {
+        return isActive;
     }
 
-    public void setId(String id) {
-        this.id = id;
-    }
-
-    public DateTime getEndTime() {
-        return endTime;
-    }
-
-    public void setEndTime(DateTime endTime) {
-        this.endTime = endTime;
+    public void setActive(boolean active) {
+        isActive = active;
     }
 
     public String getFormattedStartTime() {

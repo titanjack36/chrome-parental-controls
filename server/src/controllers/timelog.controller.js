@@ -33,7 +33,11 @@ class TimelogController {
         return { orderBy: entry[0], isDesc: entry[1] === 'descending' };
       });
     }
-    const result = await timelogModel.fetch(startTime, endTime, extensionId, order);
+    const result = await timelogModel.fetch(startTime, endTime, extensionId, order)
+      .map(entry => ({ 
+        ...entry, 
+        isActive: !!timelogService.getActiveSite(entry.siteUrl, entry.extensionId, new Date()) 
+      }));
     res.send(JSON.stringify(result));
   }
 

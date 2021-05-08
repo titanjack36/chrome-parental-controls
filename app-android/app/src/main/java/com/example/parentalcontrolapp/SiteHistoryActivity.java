@@ -178,11 +178,11 @@ public class SiteHistoryActivity extends AppCompatActivity {
             // Since selection timezone is in UTC+0, it must be changed to the local timezone
             // so the timezone difference does not result in a different date being displayed
             selectedDate = (new LocalDateTime(selection, DateTimeZone.UTC)).toDateTime();
+            String selectedDateStr = DateTimeFormat.forPattern("EEEE MMMM d").print(selectedDate);
             if (isDateToday(selectedDate)) {
-                dateText.setText(String.format(getString(R.string.date_today),
-                        DateTimeFormat.forPattern("EEEE MMMM d").print(selectedDate)));
+                dateText.setText(String.format(getString(R.string.date_today), selectedDateStr));
             } else {
-                dateText.setText(DateTimeFormat.forPattern("EEEE MMMM d").print(selectedDate));
+                dateText.setText(selectedDateStr);
             }
             refreshList();
         });

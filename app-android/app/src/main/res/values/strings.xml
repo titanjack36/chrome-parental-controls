@@ -16,4 +16,5 @@
     <string name="empty_list_message">There were no visited sites for this date</string>
     <string name="empty_list_message_today">There are no visited sites yet for today</string>
     <string name="date_today">%s (Today)</string>
+    <string name="active">Active</string>
 </resources>
