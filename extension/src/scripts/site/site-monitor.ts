@@ -8,6 +8,9 @@ import { TimeOption } from '../models/timer.interface';
 import * as timeOptionsConfig from '../../config/time-options.json';
 import getTimerTemplate from '../templates/timer.template';
 import getBlockScreenTemplate from '../templates/block-screen.template';
+import differenceInMinutes from 'date-fns/differenceInMinutes';
+
+const timeoutDuration = 15;
 
 var tabExtConfig: ExtConfig = {
   isTimerEnabled: false,
@@ -24,6 +27,7 @@ var matchingBlockSites: Site[] = [];
 var matchingLogSites: Site[] = [];
 var activeBlockScreens: JQuery[] = [];
 var redirectOnTimeup: boolean = false;
+var lastActiveTime: Date = new Date();
 
 const uuid = "215b0307-a5ed-46ea-85db-d4880aea34a2";
 const timeOptions: TimeOption[] = (timeOptionsConfig as any).default;
@@ -54,7 +58,10 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     case Action.getActiveSitesFromTab:
       const activeBlockSiteUrls = matchingBlockSites
         .filter(site => checkIfSiteIsActive(site)).map(site => site.url);
-      const activeLogSiteUrls = matchingLogSites.map(site => site.url);
+      let activeLogSiteUrls = [];
+      if (differenceInMinutes(new Date(), lastActiveTime) < timeoutDuration) {
+        activeLogSiteUrls = matchingLogSites.map(site => site.url);
+      }
       response = { activeBlockSiteUrls, activeLogSiteUrls };
       break;
 
@@ -143,7 +150,15 @@ $(document).click(function (event) {
       !$target.closest(`#${uuid}_authPopover`).length) {
     hidePopovers();
   }
-})
+});
+
+$(document).mousemove(function () {
+  lastActiveTime = new Date();
+});
+
+$(document).keydown(function () {
+  lastActiveTime = new Date();
+});
 
 $(`#${uuid}_addTimeBtn`).click(function () {
   if (isAddTimePopoverShown || isAuthPopoverShown) {
